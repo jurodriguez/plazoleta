@@ -45,6 +45,11 @@ dependencies {
 
 	implementation "org.springdoc:springdoc-openapi-ui:${openApiVersion}"
 	implementation "org.springdoc:springdoc-openapi-webflux-ui:${openApiVersion}"
+
+	//test
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+	testImplementation 'org.mockito:mockito-core:5.1.1'
+	testImplementation 'org.mockito:mockito-junit-jupiter:5.1.1'
 }
 
 tasks.named('test') {
