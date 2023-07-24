@@ -5,7 +5,9 @@ public enum ExceptionResponse {
     PHONE_NUMBER_INCORRECT("The number phone structure is incorrect"),
     NIT_INCORRECT("The nit structure is incorrect"),
     OWNER_INVALID("The owner of the restaurant is invalid"),
-    RESTAURANT_NAME_INVALID("The restaurant name is invalid");
+    RESTAURANT_NAME_INVALID("The restaurant name is invalid"),
+    PRICE_INVALID("The price is invalid"),
+    RESTAURANT_ID_INVALID("The restaurant ID is invalid");
 
     private final String message;
 

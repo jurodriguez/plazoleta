@@ -4,6 +4,8 @@ import com.pragma.powerup.infrastructure.exception.NitException;
 import com.pragma.powerup.infrastructure.exception.NoDataFoundException;
 import com.pragma.powerup.infrastructure.exception.OwnerInvalidException;
 import com.pragma.powerup.infrastructure.exception.PhoneNumberException;
+import com.pragma.powerup.infrastructure.exception.PriceInvalidException;
+import com.pragma.powerup.infrastructure.exception.RestaurantIdInvalidException;
 import com.pragma.powerup.infrastructure.exception.RestaurantNameException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -43,6 +45,16 @@ public class ControllerAdvisor {
     @ExceptionHandler(RestaurantNameException.class)
     public ResponseEntity<Map<String, String>> handleRestaurantNameException(RestaurantNameException ignoredRestaurantNameException) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap(MESSAGE, ExceptionResponse.RESTAURANT_NAME_INVALID.getMessage()));
+    }
+
+    @ExceptionHandler(RestaurantIdInvalidException.class)
+    public ResponseEntity<Map<String, String>> handleRestaurantIdInvalidException(RestaurantIdInvalidException ignoredRestaurantIdInvalidException) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap(MESSAGE, ExceptionResponse.RESTAURANT_ID_INVALID.getMessage()));
+    }
+
+    @ExceptionHandler(PriceInvalidException.class)
+    public ResponseEntity<Map<String, String>> handlePriceInvalidException(PriceInvalidException ignoredPriceInvalidException) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap(MESSAGE, ExceptionResponse.PRICE_INVALID.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
