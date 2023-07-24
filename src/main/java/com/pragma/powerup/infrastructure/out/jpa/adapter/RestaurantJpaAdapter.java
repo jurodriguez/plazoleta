@@ -7,6 +7,8 @@ import com.pragma.powerup.infrastructure.out.jpa.mapper.IRestaurantEntityMapper;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IRestaurantRepository;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Optional;
+
 @RequiredArgsConstructor
 public class RestaurantJpaAdapter implements IRestaurantPersistencePort {
 
@@ -20,4 +22,10 @@ public class RestaurantJpaAdapter implements IRestaurantPersistencePort {
         return restaurantEntityMapper.toRestaurantModel(restaurantEntity);
     }
 
+    @Override
+    public Restaurant getRestaurantById(Long id) {
+        Optional<RestaurantEntity> optionalRestaurantEntity = restaurantRepository.findById(id);
+        RestaurantEntity restaurantEntity = optionalRestaurantEntity.orElse(null);
+        return restaurantEntityMapper.toRestaurantModel(restaurantEntity);
+    }
 }
