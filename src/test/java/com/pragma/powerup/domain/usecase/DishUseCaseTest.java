@@ -8,13 +8,16 @@ import com.pragma.powerup.factory.FactoryDishesDataTest;
 import com.pragma.powerup.factory.FactoryRestaurantsDataTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
-public class DishUseCaseTest {
+class DishUseCaseTest {
 
     @InjectMocks
     DishUseCase dishUseCase;
@@ -39,4 +42,25 @@ public class DishUseCaseTest {
         Mockito.verify(restaurantPersistencePort).getRestaurantById(Mockito.anyLong());
         Mockito.verify(dishPersistencePort).saveDish(Mockito.any(Dish.class));
     }
+
+    @Test
+    void mustUpdateDish() {
+        Dish previusDish = FactoryDishesDataTest.getDish();
+        Dish newDish = FactoryDishesDataTest.getNewDish();
+
+        previusDish.setDescription(newDish.getDescription());
+        previusDish.setPrice(newDish.getPrice());
+
+        Mockito.when(dishPersistencePort.getDishById(Mockito.anyLong())).thenReturn(previusDish);
+        Mockito.when(dishPersistencePort.getDishById(previusDish.getId())).thenReturn(previusDish);
+
+        dishUseCase.updateDish(previusDish.getId(), previusDish);
+
+        //Then
+        Mockito.verify(dishPersistencePort).getDishById(Mockito.anyLong());
+        Mockito.verify(dishPersistencePort).saveDish(Mockito.any(Dish.class));
+        assertEquals(previusDish.getDescription(), newDish.getDescription());
+        assertEquals(previusDish.getPrice(), newDish.getPrice());
+    }
 }
+

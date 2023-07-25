@@ -7,7 +7,8 @@ public enum ExceptionResponse {
     OWNER_INVALID("The owner of the restaurant is invalid"),
     RESTAURANT_NAME_INVALID("The restaurant name is invalid"),
     PRICE_INVALID("The price is invalid"),
-    RESTAURANT_ID_INVALID("The restaurant ID is invalid");
+    RESTAURANT_ID_INVALID("The restaurant ID is invalid"),
+    DISH_NOT_EXIST("The dish doesn't exist");
 
     private final String message;
 
