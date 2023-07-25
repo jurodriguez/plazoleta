@@ -5,6 +5,7 @@ import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
+import com.pragma.powerup.infrastructure.exception.DishNotExistException;
 import com.pragma.powerup.infrastructure.exception.OwnerInvalidException;
 import com.pragma.powerup.infrastructure.exception.PriceInvalidException;
 import com.pragma.powerup.infrastructure.exception.RestaurantIdInvalidException;
@@ -24,6 +25,22 @@ public class DishUseCase implements IDishServicePort {
         dish.setActive(true);
         saveValidations(dish);
         dishPersistencePort.saveDish(dish);
+    }
+
+    @Override
+    public void updateDish(Long id, Dish dishModel) {
+        Dish previusDish = getPreviusDish(id);
+        priceValidation(dishModel.getPrice());
+        previusDish.setPrice(dishModel.getPrice());
+        previusDish.setDescription(dishModel.getDescription());
+
+        dishPersistencePort.saveDish(previusDish);
+    }
+
+    private Dish getPreviusDish(Long id) {
+        Dish previusDish = dishPersistencePort.getDishById(id);
+        if (previusDish == null) throw new DishNotExistException();
+        return previusDish;
     }
 
     private void saveValidations(Dish dish) {

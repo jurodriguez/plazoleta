@@ -1,5 +1,6 @@
 package com.pragma.powerup.infrastructure.exceptionhandler;
 
+import com.pragma.powerup.infrastructure.exception.DishNotExistException;
 import com.pragma.powerup.infrastructure.exception.NitException;
 import com.pragma.powerup.infrastructure.exception.NoDataFoundException;
 import com.pragma.powerup.infrastructure.exception.OwnerInvalidException;
@@ -50,6 +51,11 @@ public class ControllerAdvisor {
     @ExceptionHandler(RestaurantIdInvalidException.class)
     public ResponseEntity<Map<String, String>> handleRestaurantIdInvalidException(RestaurantIdInvalidException ignoredRestaurantIdInvalidException) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap(MESSAGE, ExceptionResponse.RESTAURANT_ID_INVALID.getMessage()));
+    }
+
+    @ExceptionHandler(DishNotExistException.class)
+    public ResponseEntity<Map<String, String>> handleDishNotExistException(DishNotExistException ignoredDishNotExistException) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap(MESSAGE, ExceptionResponse.DISH_NOT_EXIST.getMessage()));
     }
 
     @ExceptionHandler(PriceInvalidException.class)

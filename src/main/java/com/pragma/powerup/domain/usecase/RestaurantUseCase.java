@@ -58,7 +58,7 @@ public class RestaurantUseCase implements IRestaurantServicePort {
     private void ownerValidation(Long ownerId) {
         User user = userFeignClientPort.getUserById(ownerId);
         if (user != null && user.getRoleId() != null) {
-            if (user.getRoleId() != ERoles.OWNER.getId()) {
+            if (user.getRoleId().longValue() != ERoles.OWNER.getId().longValue()) {
                 throw new OwnerInvalidException();
             }
         } else {
