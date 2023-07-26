@@ -4,4 +4,6 @@ import com.pragma.powerup.domain.model.User;
 
 public interface IUserFeignClientPort {
     User getUserById(Long userId);
+
+    User getUserByEmail(String email);
 }

@@ -2,7 +2,7 @@ package com.pragma.powerup.domain.model;
 
 public enum ERoles {
     ADMINISTRATOR(1L, "Administrator"),
-    OWNER(2L, "Owner"),
+    OWNER(2L, "OWNER"),
     EMPLOYEE(3L, "Employee"),
     CUSTOMER(4L, "Customer");
 

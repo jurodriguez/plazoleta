@@ -19,4 +19,10 @@ public class UserFeignAdapter implements IUserFeignClientPort {
         UserDto userDto = userFeignClients.getUserById(userId);
         return userDtoMapper.toUserModel(userDto);
     }
+
+    @Override
+    public User getUserByEmail(String email) {
+        UserDto userDto = userFeignClients.getUserByEmail(email);
+        return userDtoMapper.toUserModel(userDto);
+    }
 }

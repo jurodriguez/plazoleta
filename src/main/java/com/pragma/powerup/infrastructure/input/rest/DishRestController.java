@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -34,6 +35,7 @@ public class DishRestController {
             @ApiResponse(responseCode = "409", description = "Dish already exists", content = @Content)
     })
     @PostMapping("/")
+    @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<Void> saveDish(@RequestBody DishRequestDto dishRequestDto) {
         dishHandler.saveDish(dishRequestDto);
         return new ResponseEntity<>(HttpStatus.CREATED);
@@ -47,6 +49,7 @@ public class DishRestController {
             @ApiResponse(responseCode = "404", description = "No data found", content = @Content)
     })
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<DishRequestDto> updateDish(@PathVariable(value = "id") Long dishId, @Valid @RequestBody DishUpdateRequestDto dishUpdateRequestDto) {
         dishHandler.updateDish(dishId, dishUpdateRequestDto);
         return new ResponseEntity<>(HttpStatus.OK);
