@@ -4,6 +4,7 @@ import com.pragma.powerup.infrastructure.exception.DishNotExistException;
 import com.pragma.powerup.infrastructure.exception.NitException;
 import com.pragma.powerup.infrastructure.exception.NoDataFoundException;
 import com.pragma.powerup.infrastructure.exception.OwnerInvalidException;
+import com.pragma.powerup.infrastructure.exception.OwnerNotAuthenticatedException;
 import com.pragma.powerup.infrastructure.exception.PhoneNumberException;
 import com.pragma.powerup.infrastructure.exception.PriceInvalidException;
 import com.pragma.powerup.infrastructure.exception.RestaurantIdInvalidException;
@@ -61,6 +62,11 @@ public class ControllerAdvisor {
     @ExceptionHandler(PriceInvalidException.class)
     public ResponseEntity<Map<String, String>> handlePriceInvalidException(PriceInvalidException ignoredPriceInvalidException) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap(MESSAGE, ExceptionResponse.PRICE_INVALID.getMessage()));
+    }
+
+    @ExceptionHandler(OwnerNotAuthenticatedException.class)
+    public ResponseEntity<Map<String, String>> handleOwnerNotAuthenticatedException(OwnerNotAuthenticatedException ignoredOwnerNotAuthenticatedException) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap(MESSAGE, ExceptionResponse.OWNER_NOT_AUTHENTICATED.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
