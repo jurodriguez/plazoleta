@@ -7,7 +7,7 @@ public class FactoryRestaurantsDataTest {
 
     public static Restaurant getRestaurant() {
         Restaurant restaurant = new Restaurant();
-        restaurant.setId(1L);
+        restaurant.setId(20L);
         restaurant.setName("ElCorral");
         restaurant.setAddress("cabecera");
         restaurant.setNit("231321");

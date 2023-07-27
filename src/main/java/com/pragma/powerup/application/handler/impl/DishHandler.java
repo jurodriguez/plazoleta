@@ -32,4 +32,9 @@ public class DishHandler implements IDishHandler {
         Dish dishModel = dishRequestMapper.toDishUpdate(dishUpdateRequestDto);
         dishServicePort.updateDish(id, dishModel);
     }
+
+    @Override
+    public void updateEnableDisableDish(Long dishId, Long flag) {
+        dishServicePort.updateEnableDisableDish(dishId, flag);
+    }
 }

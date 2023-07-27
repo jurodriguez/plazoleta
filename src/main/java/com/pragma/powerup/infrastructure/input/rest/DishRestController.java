@@ -56,4 +56,18 @@ public class DishRestController {
 
     }
 
+    @Operation(summary = "Enable or disable dish")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Dish enable/disable",
+                    content = @Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = DishRequestDto.class)))),
+            @ApiResponse(responseCode = "404", description = "No data found", content = @Content)
+    })
+    @PutMapping("/{id}/activate/{enableDisable}")
+    @PreAuthorize("hasAuthority('OWNER')")
+    public ResponseEntity<DishRequestDto> updateEnableDisableDish(@PathVariable(value = "id") Long dishId, @PathVariable(value = "enableDisable") Long enableDisable) {
+        dishHandler.updateEnableDisableDish(dishId, enableDisable);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
 }

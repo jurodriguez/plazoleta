@@ -10,4 +10,6 @@ public interface IDishHandler {
     void saveDish(@Valid DishRequestDto dishRequestDto);
 
     void updateDish(Long id, DishUpdateRequestDto dishUpdateRequestDto);
+
+    void updateEnableDisableDish(Long dishId, Long flag);
 }

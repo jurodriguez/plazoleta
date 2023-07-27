@@ -44,6 +44,17 @@ public class DishUseCase implements IDishServicePort {
         dishPersistencePort.saveDish(previusDish);
     }
 
+    @Override
+    public void updateEnableDisableDish(Long dishId, Long flag) {
+        Dish dish = getPreviusDish(dishId);
+        ownerValidation(dish.getRestaurantId());
+
+        boolean isEnableOrDisable = (flag == 1) ? true : false;
+        dish.setActive(isEnableOrDisable);
+
+        dishPersistencePort.saveDish(dish);
+    }
+
     private Dish getPreviusDish(Long id) {
         Dish previusDish = dishPersistencePort.getDishById(id);
         if (previusDish == null) throw new DishNotExistException();
