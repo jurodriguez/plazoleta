@@ -32,6 +32,12 @@ public class RestaurantUseCase implements IRestaurantServicePort {
         restaurantPersistencePort.saveRestaurant(restaurant);
     }
 
+    @Override
+    public Restaurant getRestaurantByOwnerId(Long ownerId) {
+        return restaurantPersistencePort.getRestaurantByOwnerId(ownerId);
+    }
+
+
     private void saveValidations(Restaurant restaurant) {
         nitValidation(restaurant.getNit());
         phoneValidation(restaurant.getPhone());
