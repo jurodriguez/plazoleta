@@ -4,8 +4,10 @@ import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
+import com.pragma.powerup.domain.spi.bearertoken.IToken;
 import com.pragma.powerup.factory.FactoryDishesDataTest;
 import com.pragma.powerup.factory.FactoryRestaurantsDataTest;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -28,6 +30,9 @@ class DishUseCaseTest {
     @Mock
     IRestaurantPersistencePort restaurantPersistencePort;
 
+    @Mock
+    private IToken token;
+
     @Test
     void mustSaveDish() {
         Dish dish = FactoryDishesDataTest.getDish();
@@ -35,6 +40,7 @@ class DishUseCaseTest {
 
         Mockito.when(restaurantPersistencePort.getRestaurantById(Mockito.anyLong())).thenReturn(restaurant);
         Mockito.when(restaurantPersistencePort.getRestaurantById(dish.getRestaurantId())).thenReturn(restaurant);
+        validateToken();
 
         dishUseCase.saveDish(dish);
 
@@ -47,6 +53,7 @@ class DishUseCaseTest {
     void mustUpdateDish() {
         Dish previusDish = FactoryDishesDataTest.getDish();
         Dish newDish = FactoryDishesDataTest.getNewDish();
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
 
         previusDish.setDescription(newDish.getDescription());
         previusDish.setPrice(newDish.getPrice());
@@ -54,13 +61,50 @@ class DishUseCaseTest {
         Mockito.when(dishPersistencePort.getDishById(Mockito.anyLong())).thenReturn(previusDish);
         Mockito.when(dishPersistencePort.getDishById(previusDish.getId())).thenReturn(previusDish);
 
+        validateToken();
+
+        Mockito.when(restaurantPersistencePort.getRestaurantById(newDish.getRestaurantId())).thenReturn(restaurant);
+
         dishUseCase.updateDish(previusDish.getId(), previusDish);
 
         //Then
         Mockito.verify(dishPersistencePort).getDishById(Mockito.anyLong());
+
+        Mockito.verify(token, Mockito.times(1)).getBearerToken();
+        Mockito.verify(token, Mockito.times(1)).getUserAuthenticatedId("bearer token");
+
+        Mockito.verify(restaurantPersistencePort, Mockito.times(1)).getRestaurantById(newDish.getRestaurantId());
+
         Mockito.verify(dishPersistencePort).saveDish(Mockito.any(Dish.class));
         assertEquals(previusDish.getDescription(), newDish.getDescription());
         assertEquals(previusDish.getPrice(), newDish.getPrice());
+    }
+
+    @Test
+    public void updateEnableDisableDish() {
+        Long idDish = 1L;
+        Long flag = 1L;
+        Dish dish = new Dish();
+        dish.setId(idDish);
+        dish.setActive(false);
+        Restaurant restaurant = new Restaurant();
+        restaurant.setOwnerId(FactoryRestaurantsDataTest.getRestaurant().getOwnerId());
+        dish.setRestaurantId(restaurant.getId());
+
+        Mockito.when(dishPersistencePort.getDishById(idDish)).thenReturn(dish);
+        validateToken();
+        Mockito.when(restaurantPersistencePort.getRestaurantById(restaurant.getId())).thenReturn(restaurant);
+
+        // Act
+        dishUseCase.updateEnableDisableDish(idDish, flag);
+
+        // Assert
+        Assertions.assertTrue(dish.getActive());
+    }
+
+    private void validateToken() {
+        Mockito.when(token.getBearerToken()).thenReturn("bearer token");
+        Mockito.when(token.getUserAuthenticatedId("bearer token")).thenReturn(1L);
     }
 }
 
