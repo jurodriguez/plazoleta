@@ -81,7 +81,7 @@ class DishUseCaseTest {
     }
 
     @Test
-    public void updateEnableDisableDish() {
+    void updateEnableDisableDish() {
         Long idDish = 1L;
         Long flag = 1L;
         Dish dish = new Dish();

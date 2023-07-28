@@ -12,6 +12,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.Arrays;
+import java.util.List;
+
 @ExtendWith(SpringExtension.class)
 class RestaurantUseCaseTest {
 
@@ -39,4 +44,33 @@ class RestaurantUseCaseTest {
         Mockito.verify(restaurantPersistencePort).saveRestaurant(Mockito.any(Restaurant.class));
     }
 
+    @Test
+    void mustGetARestaurantByOwnerId() {
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
+
+        Mockito.when(restaurantPersistencePort.getRestaurantByOwnerId(Mockito.anyLong())).thenReturn(restaurant);
+
+        restaurantUseCase.getRestaurantByOwnerId(restaurant.getOwnerId());
+        Mockito.verify(restaurantPersistencePort).getRestaurantByOwnerId(Mockito.anyLong());
+    }
+
+    @Test
+    void getRestaurantsWithPagination() {
+        // configure test values
+        Integer page = 1;
+        Integer size = 10;
+        List<Restaurant> expectedList = Arrays.asList(new Restaurant(), new Restaurant(), new Restaurant());
+
+        // configure the mock to return the expected results
+        Mockito.when(restaurantPersistencePort.getRestaurantsWithPagination(page, size)).thenReturn(expectedList);
+
+        // Run test method
+        List<Restaurant> resultList = restaurantUseCase.getRestaurantsWithPagination(page, size);
+
+        // Verify that the results are as expected
+        assertEquals(expectedList, resultList);
+
+        // Verify that the mock method has been called
+        Mockito.verify(restaurantPersistencePort).getRestaurantsWithPagination(page, size);
+    }
 }
