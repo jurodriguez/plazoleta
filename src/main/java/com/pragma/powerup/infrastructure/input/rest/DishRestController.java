@@ -2,6 +2,7 @@ package com.pragma.powerup.infrastructure.input.rest;
 
 import com.pragma.powerup.application.dto.request.DishRequestDto;
 import com.pragma.powerup.application.dto.request.DishUpdateRequestDto;
+import com.pragma.powerup.application.dto.response.DishResponseDto;
 import com.pragma.powerup.application.handler.IDishHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -13,14 +14,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/dish")
@@ -68,6 +72,19 @@ public class DishRestController {
     public ResponseEntity<DishRequestDto> updateEnableDisableDish(@PathVariable(value = "id") Long dishId, @PathVariable(value = "enableDisable") Long enableDisable) {
         dishHandler.updateEnableDisableDish(dishId, enableDisable);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get all dishes by restaurant")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All dishes returned",
+                    content = @Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = DishResponseDto.class)))),
+            @ApiResponse(responseCode = "404", description = "No data found", content = @Content)
+    })
+    @GetMapping("/getAllDish")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<List<DishResponseDto>> getAllDishesByRestaurant(@RequestParam Long restaurantId, @RequestParam Long categoryId, @RequestParam(defaultValue = "0") Integer page, @RequestParam(defaultValue = "1") Integer size) {
+        return ResponseEntity.ok(dishHandler.findDishPaginationByRestaurantId(restaurantId, categoryId, page, size));
     }
 
 }

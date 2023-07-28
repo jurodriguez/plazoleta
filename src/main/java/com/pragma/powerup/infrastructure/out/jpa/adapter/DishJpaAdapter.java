@@ -6,8 +6,13 @@ import com.pragma.powerup.infrastructure.out.jpa.entity.DishEntity;
 import com.pragma.powerup.infrastructure.out.jpa.mapper.IDishEntityMapper;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IDishRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
+import java.awt.print.Pageable;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class DishJpaAdapter implements IDishPersistencePort {
@@ -26,5 +31,14 @@ public class DishJpaAdapter implements IDishPersistencePort {
         Optional<DishEntity> optionalDishEntity = dishRepository.findById(id);
         DishEntity dishEntity = optionalDishEntity.orElse(null);
         return dishEntityMapper.toDishModel(dishEntity);
+    }
+
+    @Override
+    public List<Dish> findDishPaginationByRestaurantId(Long restaurantId, Long categoryId, Integer page, Integer size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("categoryId"));
+        return dishRepository.findAllByRestaurantIdAndCategoryIdAndActive(restaurantId, categoryId, true, pageable)
+                .stream()
+                .map(dishEntityMapper::toDishModel)
+                .collect(Collectors.toList());
     }
 }

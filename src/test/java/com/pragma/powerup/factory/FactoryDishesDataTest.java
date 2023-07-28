@@ -13,6 +13,7 @@ public class FactoryDishesDataTest {
         dish.setCategoryId(3L);
         dish.setImageUrl("https://weekend-bucket.s3.amazonaws.com/Mercagan_Parrilla_Bucaramanga_Santander_4_1814dcd866.jpg");
         dish.setRestaurantId(1L);
+        dish.setActive(true);
 
         return dish;
     }
@@ -26,6 +27,7 @@ public class FactoryDishesDataTest {
         dish.setCategoryId(3L);
         dish.setImageUrl("https://weekend-bucket.s3.amazonaws.com/Mercagan_Parrilla_Bucaramanga_Santander_4_1814dcd866.jpg");
         dish.setRestaurantId(1L);
+        dish.setActive(true);
 
         return dish;
     }
