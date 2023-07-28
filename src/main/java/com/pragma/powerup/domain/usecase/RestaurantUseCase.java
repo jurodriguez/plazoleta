@@ -12,6 +12,7 @@ import com.pragma.powerup.infrastructure.exception.OwnerInvalidException;
 import com.pragma.powerup.infrastructure.exception.PhoneNumberException;
 import com.pragma.powerup.infrastructure.exception.RestaurantNameException;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,6 +36,11 @@ public class RestaurantUseCase implements IRestaurantServicePort {
     @Override
     public Restaurant getRestaurantByOwnerId(Long ownerId) {
         return restaurantPersistencePort.getRestaurantByOwnerId(ownerId);
+    }
+
+    @Override
+    public List<Restaurant> getRestaurantsWithPagination(Integer page, Integer size) {
+        return restaurantPersistencePort.getRestaurantsWithPagination(page, size);
     }
 
 

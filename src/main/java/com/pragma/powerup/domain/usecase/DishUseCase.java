@@ -49,7 +49,7 @@ public class DishUseCase implements IDishServicePort {
         Dish dish = getPreviusDish(dishId);
         ownerValidation(dish.getRestaurantId());
 
-        boolean isEnableOrDisable = (flag == 1) ? true : false;
+        boolean isEnableOrDisable = (flag == 1);
         dish.setActive(isEnableOrDisable);
 
         dishPersistencePort.saveDish(dish);

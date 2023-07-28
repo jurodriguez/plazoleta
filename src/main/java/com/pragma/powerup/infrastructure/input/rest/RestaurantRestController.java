@@ -1,10 +1,13 @@
 package com.pragma.powerup.infrastructure.input.rest;
 
 import com.pragma.powerup.application.dto.request.RestaurantRequestDto;
+import com.pragma.powerup.application.dto.response.RestaurantPaginationResponseDto;
 import com.pragma.powerup.application.dto.response.RestaurantResponseDto;
 import com.pragma.powerup.application.handler.IRestaurantHandler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/restaurant")
@@ -45,6 +50,19 @@ public class RestaurantRestController {
     @GetMapping("/restaurantByOwnerId/{id}")
     public ResponseEntity<RestaurantResponseDto> getRestaurantByOwnerId(@PathVariable(value = "id") Long ownerId) {
         return ResponseEntity.ok(restaurantHandler.getRestaurantByOwnerId(ownerId));
+    }
+
+    @Operation(summary = "Get all restaurants with pagination")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All restaurants returned paginated",
+                    content = @Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = RestaurantPaginationResponseDto.class)))),
+            @ApiResponse(responseCode = "404", description = "No data found", content = @Content)
+    })
+    @GetMapping("/page/{page}/size/{size}")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<List<RestaurantPaginationResponseDto>> getAllRestaurantsPagination(@PathVariable(value = "page") Integer page, @PathVariable(value = "size") Integer size) {
+        return ResponseEntity.ok(restaurantHandler.getRestaurantsWithPagination(page, size));
     }
 
 }
