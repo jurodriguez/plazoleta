@@ -8,12 +8,13 @@ public class Dish {
     private Integer price;
     private Long restaurantId;
     private String imageUrl;
-    private Boolean active;
+    private boolean active;
 
     public Dish() {
     }
 
-    public Dish(String name, Long categoryId, String description, Integer price, Long restaurantId, String imageUrl, Boolean active) {
+    public Dish(Long id, String name, Long categoryId, String description, Integer price, Long restaurantId, String imageUrl, boolean active) {
+        this.id = id;
         this.name = name;
         this.categoryId = categoryId;
         this.description = description;
@@ -79,11 +80,11 @@ public class Dish {
         this.imageUrl = imageUrl;
     }
 
-    public Boolean getActive() {
+    public boolean getActive() {
         return active;
     }
 
-    public void setActive(Boolean active) {
+    public void setActive(boolean active) {
         this.active = active;
     }
 }

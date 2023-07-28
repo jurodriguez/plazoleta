@@ -18,6 +18,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @ExtendWith(SpringExtension.class)
 class DishUseCaseTest {
 
@@ -105,6 +108,30 @@ class DishUseCaseTest {
     private void validateToken() {
         Mockito.when(token.getBearerToken()).thenReturn("bearer token");
         Mockito.when(token.getUserAuthenticatedId("bearer token")).thenReturn(1L);
+    }
+
+    @Test
+    void findDishPaginationByRestaurantId() {
+        Long restaurantId = 1L;
+        Long categoryId = 1L;
+        Integer page = 0;
+        Integer size = 5;
+
+        List<Dish> expectedList = new ArrayList<>();
+        expectedList.add(FactoryDishesDataTest.getDish());
+        expectedList.add(FactoryDishesDataTest.getNewDish());
+
+        // configure the mock to return the expected results
+        Mockito.when(dishPersistencePort.findDishPaginationByRestaurantId(restaurantId, categoryId, page, size)).thenReturn(expectedList);
+
+        // Run test method
+        List<Dish> resultList = dishUseCase.findDishPaginationByRestaurantId(restaurantId, categoryId, page, size);
+
+        // Verify that the results are as expected
+        assertEquals(expectedList, resultList);
+
+        // Verify that the mock method has been called
+        Mockito.verify(dishPersistencePort).findDishPaginationByRestaurantId(restaurantId, categoryId, page, size);
     }
 }
 

@@ -7,10 +7,13 @@ import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.bearertoken.IToken;
 import com.pragma.powerup.infrastructure.exception.DishNotExistException;
+import com.pragma.powerup.infrastructure.exception.NoDataFoundException;
 import com.pragma.powerup.infrastructure.exception.OwnerInvalidException;
 import com.pragma.powerup.infrastructure.exception.OwnerNotAuthenticatedException;
 import com.pragma.powerup.infrastructure.exception.PriceInvalidException;
 import com.pragma.powerup.infrastructure.exception.RestaurantIdInvalidException;
+
+import java.util.List;
 
 public class DishUseCase implements IDishServicePort {
 
@@ -53,6 +56,13 @@ public class DishUseCase implements IDishServicePort {
         dish.setActive(isEnableOrDisable);
 
         dishPersistencePort.saveDish(dish);
+    }
+
+    @Override
+    public List<Dish> findDishPaginationByRestaurantId(Long restaurantId, Long categoryId, Integer page, Integer size) {
+        List<Dish> dishList = dishPersistencePort.findDishPaginationByRestaurantId(restaurantId, categoryId, page, size);
+        if (dishList.isEmpty()) throw new NoDataFoundException();
+        return dishList;
     }
 
     private Dish getPreviusDish(Long id) {
