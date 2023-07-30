@@ -1,16 +1,16 @@
 package com.pragma.powerup.domain.usecase;
 
 import com.pragma.powerup.domain.api.IRestaurantServicePort;
-import com.pragma.powerup.domain.model.ERoles;
+import com.pragma.powerup.domain.enums.ERoles;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.model.User;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.feignclients.IUserFeignClientPort;
 import com.pragma.powerup.domain.util.UtilNumbers;
-import com.pragma.powerup.infrastructure.exception.NitException;
-import com.pragma.powerup.infrastructure.exception.OwnerInvalidException;
-import com.pragma.powerup.infrastructure.exception.PhoneNumberException;
-import com.pragma.powerup.infrastructure.exception.RestaurantNameException;
+import com.pragma.powerup.common.exception.NitException;
+import com.pragma.powerup.common.exception.OwnerInvalidException;
+import com.pragma.powerup.common.exception.PhoneNumberException;
+import com.pragma.powerup.common.exception.RestaurantNameException;
 
 import java.util.List;
 import java.util.regex.Matcher;

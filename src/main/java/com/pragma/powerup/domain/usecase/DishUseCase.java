@@ -6,12 +6,12 @@ import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.bearertoken.IToken;
-import com.pragma.powerup.infrastructure.exception.DishNotExistException;
-import com.pragma.powerup.infrastructure.exception.NoDataFoundException;
-import com.pragma.powerup.infrastructure.exception.OwnerInvalidException;
-import com.pragma.powerup.infrastructure.exception.OwnerNotAuthenticatedException;
-import com.pragma.powerup.infrastructure.exception.PriceInvalidException;
-import com.pragma.powerup.infrastructure.exception.RestaurantIdInvalidException;
+import com.pragma.powerup.common.exception.DishNotExistException;
+import com.pragma.powerup.common.exception.NoDataFoundException;
+import com.pragma.powerup.common.exception.OwnerInvalidException;
+import com.pragma.powerup.common.exception.OwnerNotAuthenticatedException;
+import com.pragma.powerup.common.exception.PriceInvalidException;
+import com.pragma.powerup.common.exception.RestaurantIdInvalidException;
 
 import java.util.List;
 

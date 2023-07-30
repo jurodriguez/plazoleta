@@ -1,4 +1,4 @@
-package com.pragma.powerup.infrastructure.exception;
+package com.pragma.powerup.common.exception;
 
 public class RestaurantIdInvalidException extends RuntimeException {
     public RestaurantIdInvalidException() {

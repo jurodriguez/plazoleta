@@ -1,4 +1,4 @@
-package com.pragma.powerup.domain.model;
+package com.pragma.powerup.domain.enums;
 
 public enum ERoles {
     ADMINISTRATOR(1L, "Administrator"),
