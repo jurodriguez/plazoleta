@@ -1,4 +1,4 @@
-package com.pragma.powerup.infrastructure.exception;
+package com.pragma.powerup.common.exception;
 
 public class PriceInvalidException extends RuntimeException {
     public PriceInvalidException() {
