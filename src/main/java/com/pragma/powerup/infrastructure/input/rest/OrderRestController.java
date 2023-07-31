@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -53,5 +54,19 @@ public class OrderRestController {
     @PreAuthorize("hasAuthority('EMPLOYEE')")
     public ResponseEntity<List<OrderResponseDto>> getAllOrderByState(@RequestParam(defaultValue = "0") Integer page, @RequestParam(defaultValue = "1") Integer size, @RequestParam() String status) {
         return ResponseEntity.ok(orderHandler.getAllOrdersWithPagination(page, size, status));
+    }
+
+    @Operation(summary = "Take order and update status")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order taken", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Order doesn't exists", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
+            @ApiResponse(responseCode = "403", description = "No authorized", content = @Content)
+    })
+    @PutMapping("/takeOrderAndUpdateStatus")
+    @PreAuthorize("hasAuthority('EMPLOYEE')")
+    public ResponseEntity<Void> takeOrderAndUpdateStatus(@RequestParam Long orderId, @RequestParam String status) {
+        orderHandler.takeOrderAndUpdateStatus(orderId, status);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
