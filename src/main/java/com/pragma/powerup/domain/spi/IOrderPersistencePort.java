@@ -12,4 +12,8 @@ public interface IOrderPersistencePort {
     Boolean existsByCustomerIdAndStatus(Long id, String status);
 
     void saveOrderDish(List<OrderDish> orderDishModels);
+
+    List<Order> getAllOrdersWithPagination(Integer page, Integer size, Long restaurantId, String status);
+
+    List<OrderDish> getAllOrdersByOrderId(Long orderId);
 }

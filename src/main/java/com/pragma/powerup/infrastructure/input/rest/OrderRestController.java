@@ -12,10 +12,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/order")
@@ -36,5 +40,18 @@ public class OrderRestController {
     public ResponseEntity<OrderResponseDto> placeAnOrder(@Validated @RequestBody OrderRequestDto orderRequest) {
         orderHandler.saveOrder(orderRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @Operation(summary = "Get Orders By State")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "302", description = "Orders found", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Orders don't exists", content = @Content),
+            @ApiResponse(responseCode = "400", description = "bad request", content = @Content),
+            @ApiResponse(responseCode = "403", description = "No authorized", content = @Content)
+    })
+    @GetMapping("/getOrdersByStatePaginated")
+    @PreAuthorize("hasAuthority('EMPLOYEE')")
+    public ResponseEntity<List<OrderResponseDto>> getAllOrderByState(@RequestParam(defaultValue = "0") Integer page, @RequestParam(defaultValue = "1") Integer size, @RequestParam() String status) {
+        return ResponseEntity.ok(orderHandler.getAllOrdersWithPagination(page, size, status));
     }
 }
