@@ -1,6 +1,7 @@
 package com.pragma.powerup.factory;
 
 import com.pragma.powerup.domain.model.Restaurant;
+import com.pragma.powerup.domain.model.RestaurantEmployee;
 import com.pragma.powerup.domain.model.User;
 
 public class FactoryRestaurantsDataTest {
@@ -23,5 +24,14 @@ public class FactoryRestaurantsDataTest {
         user.setRoleId(2L);
 
         return user;
+    }
+
+    public static RestaurantEmployee getRestaurantEmployee() {
+        RestaurantEmployee restaurantEmployee = new RestaurantEmployee();
+        restaurantEmployee.setId(1L);
+        restaurantEmployee.setRestaurantId(20L);
+        restaurantEmployee.setEmployeeId(1L);
+
+        return restaurantEmployee;
     }
 }

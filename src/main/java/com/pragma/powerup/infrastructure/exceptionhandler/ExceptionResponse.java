@@ -13,7 +13,10 @@ public enum ExceptionResponse {
     CLIENT_HAS_AN_ORDER("The client has an order"),
     DISH_IS_INACTIVE("The dish is inactive"),
     DISH_RESTAURANT_NOT_EQUALS_ORDER("The Dish restaurant id not equals order restaurant id"),
-    NUMBER_DISH_REQUIRED("The number of dish is required");
+    NUMBER_DISH_REQUIRED("The number of dish is required"),
+    RESTAURANT_EMPLOYEE_NOT_EXIST("The Restaurant employee does not exist"),
+    ORDER_NOT_EXIST("The order does not exist"),
+    RESTAURANT_ORDER_MUST_BE_EQUALS_RESTAURANT_EMPLOYEE("The restaurant of the order must be the same as the restaurant of the employee");
 
     private final String message;
 

@@ -62,6 +62,15 @@ public class ControllerAdvisor {
             case "class com.pragma.powerup.common.exception.NumberDishRequiredException":
                 messageException = ExceptionResponse.NUMBER_DISH_REQUIRED.getMessage();
                 break;
+            case "class com.pragma.powerup.common.exception.RestaurantEmployeeNotExistException":
+                messageException = ExceptionResponse.RESTAURANT_EMPLOYEE_NOT_EXIST.getMessage();
+                break;
+            case "class com.pragma.powerup.common.exception.OrderNotExistException":
+                messageException = ExceptionResponse.ORDER_NOT_EXIST.getMessage();
+                break;
+            case "class com.pragma.powerup.common.exception.RestaurantOrderMustBeEqualsRestaurantEmployeeException":
+                messageException = ExceptionResponse.RESTAURANT_ORDER_MUST_BE_EQUALS_RESTAURANT_EMPLOYEE.getMessage();
+                break;
             default:
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap(exception.getClass().toString(), exception.getMessage()));
         }

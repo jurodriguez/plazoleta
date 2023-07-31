@@ -124,6 +124,28 @@ class OrderUseCaseTest {
         assertEquals(orderDish.getNumber(), orderDishResponseModel.getNumber());
     }
 
+    @Test
+    void takeOrderAndUpdateStatus() {
+        Long orderId = 1L;
+
+        validateToken();
+        Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.PENDING.getName())).thenReturn(Boolean.TRUE);
+
+        Order order = FactoryOrdersDataTest.getOrder();
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+        RestaurantEmployee restaurantEmployee = FactoryRestaurantsDataTest.getRestaurantEmployee();
+
+        Mockito.when(restaurantEmployeePersistencePort.findByEmployeeId(restaurantEmployee.getEmployeeId())).thenReturn(restaurantEmployee);
+
+        // Act
+        orderUseCase.takeOrderAndUpdateStatus(orderId, EOrderStatuses.IN_PREPARATION.getName());
+
+        // Assert
+        Mockito.verify(orderPersistencePort, Mockito.times(1)).existsByIdAndStatus(orderId, EOrderStatuses.PENDING.getName());
+        Mockito.verify(orderPersistencePort, Mockito.times(1)).getOrderById(orderId);
+        Mockito.verify(orderPersistencePort, Mockito.times(1)).saveOrder(order);
+    }
+
     private void validateToken() {
         Mockito.when(token.getBearerToken()).thenReturn("bearer token");
         Mockito.when(token.getUserAuthenticatedId("bearer token")).thenReturn(1L);

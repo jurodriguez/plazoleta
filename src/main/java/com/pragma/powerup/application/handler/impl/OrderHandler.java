@@ -34,4 +34,9 @@ public class OrderHandler implements IOrderHandler {
     public List<OrderResponseDto> getAllOrdersWithPagination(Integer page, Integer size, String status) {
         return orderResponseMapper.toOrderResponseList(orderServicePort.getAllOrdersWithPagination(page, size, status));
     }
+
+    @Override
+    public void takeOrderAndUpdateStatus(Long orderId, String status) {
+        orderServicePort.takeOrderAndUpdateStatus(orderId, status);
+    }
 }

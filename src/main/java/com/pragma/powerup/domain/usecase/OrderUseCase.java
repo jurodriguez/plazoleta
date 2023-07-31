@@ -6,11 +6,15 @@ import com.pragma.powerup.common.exception.DishNotExistException;
 import com.pragma.powerup.common.exception.DishRestaurantIdNotIsEqualsOrderException;
 import com.pragma.powerup.common.exception.NoDataFoundException;
 import com.pragma.powerup.common.exception.NumberDishRequiredException;
+import com.pragma.powerup.common.exception.OrderNotExistException;
+import com.pragma.powerup.common.exception.RestaurantOrderMustBeEqualsRestaurantEmployeeException;
+import com.pragma.powerup.common.exception.RestaurantEmployeeNotExistException;
 import com.pragma.powerup.domain.api.IOrderServicePort;
 import com.pragma.powerup.domain.enums.EOrderStatuses;
 import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderDish;
+import com.pragma.powerup.domain.model.RestaurantEmployee;
 import com.pragma.powerup.domain.model.orders.OrderDishRequestModel;
 import com.pragma.powerup.domain.model.orders.OrderDishResponseModel;
 import com.pragma.powerup.domain.model.orders.OrderRequestModel;
@@ -66,6 +70,43 @@ public class OrderUseCase implements IOrderServicePort {
         Long restaurantId = restaurantEmployeePersistencePort.findByEmployeeId(ownerAuthId).getRestaurantId();
         List<Order> orders = orderPersistencePort.getAllOrdersWithPagination(page, size, restaurantId, status);
         return createOrderResponseModelList(orders);
+    }
+
+    @Override
+    public void takeOrderAndUpdateStatus(Long orderId, String status) {
+        Long ownerAuthId = getOwnerAuth();
+        validationsToUpdate(orderId, status);
+        RestaurantEmployee restaurantEmployee = getRestaurantEmployeeById(ownerAuthId);
+        Order order = getOrderById(orderId);
+        validateOrderRestaurantAndRestaurantEmployee(order.getRestaurantId(), restaurantEmployee.getRestaurantId());
+
+        order.setChefId(restaurantEmployee.getEmployeeId());
+        order.setStatus(status);
+
+        orderPersistencePort.saveOrder(order);
+    }
+
+    private void validateOrderRestaurantAndRestaurantEmployee(Long restaurantOrderId, Long restaurantEmployeeId) {
+        if (restaurantOrderId == null || restaurantEmployeeId == null || restaurantOrderId.longValue() != restaurantEmployeeId.longValue())
+            throw new RestaurantOrderMustBeEqualsRestaurantEmployeeException();
+    }
+
+    private Order getOrderById(Long orderId) {
+        Order order = orderPersistencePort.getOrderById(orderId);
+        if (order == null) throw new OrderNotExistException();
+        return order;
+    }
+
+    private RestaurantEmployee getRestaurantEmployeeById(Long id) {
+        RestaurantEmployee restaurantEmployee = restaurantEmployeePersistencePort.findByEmployeeId(id);
+        if (restaurantEmployee == null) throw new RestaurantEmployeeNotExistException();
+        return restaurantEmployee;
+    }
+
+    private void validationsToUpdate(Long orderId, String status) {
+        if (!status.equals(EOrderStatuses.IN_PREPARATION.getName())) throw new NoDataFoundException();
+        if (Boolean.FALSE.equals(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.PENDING.getName())))
+            throw new NoDataFoundException();
     }
 
     private List<OrderResponseModel> createOrderResponseModelList(List<Order> orders) {

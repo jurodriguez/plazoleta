@@ -11,6 +11,7 @@ public class FactoryOrdersDataTest {
         order.setId(1L);
         order.setCustomerId(1L);
         order.setDate(LocalDate.now());
+        order.setRestaurantId(20L);
 
         return order;
     }

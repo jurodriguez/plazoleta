@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -67,5 +68,17 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
             throw new NoDataFoundException();
         }
         return orderDishEntityMapper.toOrderDishList(orderDishEntities);
+    }
+
+    @Override
+    public Boolean existsByIdAndStatus(Long id, String status) {
+        return orderRepository.existsByIdAndStatus(id, status);
+    }
+
+    @Override
+    public Order getOrderById(Long id) {
+        Optional<OrderEntity> orderEntityOptional = orderRepository.findById(id);
+        OrderEntity orderEntity = orderEntityOptional.orElse(null);
+        return orderEntityMapper.toOrder(orderEntity);
     }
 }

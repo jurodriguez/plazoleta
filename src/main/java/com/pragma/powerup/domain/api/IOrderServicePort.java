@@ -9,4 +9,6 @@ public interface IOrderServicePort {
     void saveOrder(OrderRequestModel orderModel);
 
     List<OrderResponseModel> getAllOrdersWithPagination(Integer page, Integer size, String status);
+
+    void takeOrderAndUpdateStatus(Long orderId, String status);
 }
