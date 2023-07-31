@@ -12,9 +12,12 @@ import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderDish;
 import com.pragma.powerup.domain.model.orders.OrderDishRequestModel;
+import com.pragma.powerup.domain.model.orders.OrderDishResponseModel;
 import com.pragma.powerup.domain.model.orders.OrderRequestModel;
+import com.pragma.powerup.domain.model.orders.OrderResponseModel;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
+import com.pragma.powerup.domain.spi.IRestaurantEmployeePersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.bearertoken.IToken;
 import com.pragma.powerup.common.exception.OwnerNotAuthenticatedException;
@@ -33,18 +36,21 @@ public class OrderUseCase implements IOrderServicePort {
 
     private final IDishPersistencePort dishPersistencePort;
 
-    public OrderUseCase(IOrderPersistencePort orderPersistencePort, IToken token, IRestaurantPersistencePort restaurantPersistencePort, IDishPersistencePort dishPersistencePort) {
+    private final IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort;
+
+    public OrderUseCase(IOrderPersistencePort orderPersistencePort, IToken token, IRestaurantPersistencePort restaurantPersistencePort, IDishPersistencePort dishPersistencePort, IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort) {
         this.orderPersistencePort = orderPersistencePort;
         this.token = token;
         this.restaurantPersistencePort = restaurantPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
+        this.restaurantEmployeePersistencePort = restaurantEmployeePersistencePort;
     }
 
     @Override
     public void saveOrder(OrderRequestModel orderRequestModel) {
-        Long customerId = getOwnerAuth();
-        validatePendingOrder(customerId);
-        Order order = createNewOrder(orderRequestModel.getRestaurantId(), customerId);
+        Long ownerAuthId = getOwnerAuth();
+        validatePendingOrder(ownerAuthId);
+        Order order = createNewOrder(orderRequestModel.getRestaurantId(), ownerAuthId);
         List<OrderDishRequestModel> orderDishes = orderRequestModel.getOrderDishes();
         validateOrderDishes(orderDishes, order);
 
@@ -54,11 +60,54 @@ public class OrderUseCase implements IOrderServicePort {
         orderPersistencePort.saveOrderDish(orderDishesSave);
     }
 
+    @Override
+    public List<OrderResponseModel> getAllOrdersWithPagination(Integer page, Integer size, String status) {
+        Long ownerAuthId = getOwnerAuth();
+        Long restaurantId = restaurantEmployeePersistencePort.findByEmployeeId(ownerAuthId).getRestaurantId();
+        List<Order> orders = orderPersistencePort.getAllOrdersWithPagination(page, size, restaurantId, status);
+        return createOrderResponseModelList(orders);
+    }
+
+    private List<OrderResponseModel> createOrderResponseModelList(List<Order> orders) {
+        List<OrderResponseModel> orderResponseModelList = new ArrayList<>();
+        for (Order order : orders) {
+            OrderResponseModel orderResponseModel = new OrderResponseModel();
+            orderResponseModel.setId(order.getId());
+            orderResponseModel.setCustomerId(order.getCustomerId());
+            orderResponseModel.setChefId(order.getChefId());
+            orderResponseModel.setDate(order.getDate());
+            orderResponseModel.setOrderDishes(new ArrayList<>());
+
+            createOrderDishResponseModelList(orderResponseModel);
+
+            orderResponseModelList.add(orderResponseModel);
+        }
+
+        return orderResponseModelList;
+    }
+
+    private void createOrderDishResponseModelList(OrderResponseModel orderResponseModel) {
+        List<OrderDish> orderDishList = orderPersistencePort.getAllOrdersByOrderId(orderResponseModel.getId());
+        for (OrderDish orderDish : orderDishList) {
+            Dish dish = dishPersistencePort.getDishById(orderDish.getDishId());
+            OrderDishResponseModel orderDishResponseModel = new OrderDishResponseModel();
+            orderDishResponseModel.setId(dish.getId());
+            orderDishResponseModel.setName(dish.getName());
+            orderDishResponseModel.setPrice(dish.getPrice());
+            orderDishResponseModel.setDescription(dish.getDescription());
+            orderDishResponseModel.setImageUrl(dish.getImageUrl());
+            orderDishResponseModel.setCategoryId(dish.getCategoryId());
+            orderDishResponseModel.setNumber(orderDish.getNumber());
+
+            orderResponseModel.getOrderDishes().add(orderDishResponseModel);
+        }
+    }
+
     private List<OrderDish> createOrderDishList(List<OrderDishRequestModel> orderDishes, Order order) {
         List<OrderDish> resultList = new ArrayList<>();
-        for (int i = 0; i < orderDishes.size(); i++) {
-            Dish dish = dishPersistencePort.getDishById(orderDishes.get(i).getDishId());
-            OrderDish orderDish = new OrderDish(null, order.getId(), dish.getId(), orderDishes.get(i).getNumber().intValue());
+        for (OrderDishRequestModel orderDishRequestModel : orderDishes) {
+            Dish dish = dishPersistencePort.getDishById(orderDishRequestModel.getDishId());
+            OrderDish orderDish = new OrderDish(null, order.getId(), dish.getId(), orderDishRequestModel.getNumber().intValue());
             resultList.add(orderDish);
         }
 
@@ -67,12 +116,12 @@ public class OrderUseCase implements IOrderServicePort {
 
     private void validateOrderDishes(List<OrderDishRequestModel> orderDishes, Order order) {
         if (orderDishes == null || orderDishes.isEmpty()) throw new NoDataFoundException();
-        for (int i = 0; i < orderDishes.size(); i++) {
-            if (orderDishes.get(i).getNumber() == null || orderDishes.get(i).getNumber().intValue() == 0)
+        for (OrderDishRequestModel orderDishRequestModel : orderDishes) {
+            if (orderDishRequestModel.getNumber() == null || orderDishRequestModel.getNumber().intValue() == 0)
                 throw new NumberDishRequiredException();
-            Dish dish = dishPersistencePort.getDishById(orderDishes.get(i).getDishId());
+            Dish dish = dishPersistencePort.getDishById(orderDishRequestModel.getDishId());
             if (dish == null) throw new DishNotExistException();
-            if (dish.getRestaurantId() != order.getRestaurantId())
+            if (dish.getRestaurantId().longValue() != order.getRestaurantId().longValue())
                 throw new DishRestaurantIdNotIsEqualsOrderException();
             if (!dish.getActive()) throw new DishIsInactiveException();
         }
@@ -86,8 +135,8 @@ public class OrderUseCase implements IOrderServicePort {
 
     public void validatePendingOrder(Long customerId) {
         if (orderPersistencePort.existsByCustomerIdAndStatus(customerId, EOrderStatuses.PENDING.getName()) ||
-                orderPersistencePort.existsByCustomerIdAndStatus(customerId, EOrderStatuses.PENDING.getName()) ||
-                orderPersistencePort.existsByCustomerIdAndStatus(customerId, EOrderStatuses.PENDING.getName()))
+                orderPersistencePort.existsByCustomerIdAndStatus(customerId, EOrderStatuses.IN_PREPARATION.getName()) ||
+                orderPersistencePort.existsByCustomerIdAndStatus(customerId, EOrderStatuses.READY.getName()))
             throw new ClientHasAnOrderException();
     }
 

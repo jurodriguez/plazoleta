@@ -1,5 +1,6 @@
 package com.pragma.powerup.infrastructure.out.jpa.adapter;
 
+import com.pragma.powerup.common.exception.NoDataFoundException;
 import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderDish;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
@@ -10,9 +11,12 @@ import com.pragma.powerup.infrastructure.out.jpa.mapper.IOrderEntityMapper;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IOrderDishRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IOrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class OrderJpaAdapter implements IOrderPersistencePort {
@@ -43,5 +47,25 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
             orderDishEntities.add(orderDishEntityMapper.toEntity(orderDish));
         }
         orderDishRepository.saveAll(orderDishEntities);
+    }
+
+    @Override
+    public List<Order> getAllOrdersWithPagination(Integer page, Integer size, Long restaurantId, String status) {
+        PageRequest pageable = PageRequest.of(page, size);
+        Page<OrderEntity> orderEntityPage = orderRepository.findByRestaurantIdAndStatus(restaurantId, status, pageable);
+        if (orderEntityPage.isEmpty()) {
+            throw new NoDataFoundException();
+        }
+        return orderEntityPage
+                .stream().map(orderEntityMapper::toOrder).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrderDish> getAllOrdersByOrderId(Long orderId) {
+        List<OrderDishEntity> orderDishEntities = orderDishRepository.findByOrderId(orderId);
+        if (orderDishEntities.isEmpty()) {
+            throw new NoDataFoundException();
+        }
+        return orderDishEntityMapper.toOrderDishList(orderDishEntities);
     }
 }
