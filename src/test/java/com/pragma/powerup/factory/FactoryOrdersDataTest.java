@@ -1,5 +1,6 @@
 package com.pragma.powerup.factory;
 
+import com.pragma.powerup.domain.enums.EOrderStatuses;
 import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderDish;
 
@@ -12,6 +13,17 @@ public class FactoryOrdersDataTest {
         order.setCustomerId(1L);
         order.setDate(LocalDate.now());
         order.setRestaurantId(20L);
+
+        return order;
+    }
+
+    public static Order getOrderWithStatus() {
+        Order order = new Order();
+        order.setId(1L);
+        order.setCustomerId(1L);
+        order.setDate(LocalDate.now());
+        order.setRestaurantId(20L);
+        order.setStatus(EOrderStatuses.IN_PREPARATION.getName());
 
         return order;
     }

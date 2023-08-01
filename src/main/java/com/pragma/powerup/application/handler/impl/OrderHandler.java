@@ -39,4 +39,9 @@ public class OrderHandler implements IOrderHandler {
     public void takeOrderAndUpdateStatus(Long orderId, String status) {
         orderServicePort.takeOrderAndUpdateStatus(orderId, status);
     }
+
+    @Override
+    public void updateAndNotifyOrderReady(Long orderId) {
+        orderServicePort.updateAndNotifyOrderReady(orderId);
+    }
 }

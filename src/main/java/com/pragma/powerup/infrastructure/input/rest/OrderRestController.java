@@ -69,4 +69,18 @@ public class OrderRestController {
         orderHandler.takeOrderAndUpdateStatus(orderId, status);
         return new ResponseEntity<>(HttpStatus.OK);
     }
+
+    @Operation(summary = "Order ready")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order ready", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Order doesn't exists", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
+            @ApiResponse(responseCode = "403", description = "No authorized", content = @Content)
+    })
+    @PutMapping("/updateAndNotifyOrderReady")
+    @PreAuthorize("hasAuthority('EMPLOYEE')")
+    public ResponseEntity<Void> updateAndNotifyOrderReady(@RequestParam Long orderId) {
+        orderHandler.updateAndNotifyOrderReady(orderId);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 }

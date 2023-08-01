@@ -15,6 +15,8 @@ import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderDish;
 import com.pragma.powerup.domain.model.RestaurantEmployee;
+import com.pragma.powerup.domain.model.SmsMessageModel;
+import com.pragma.powerup.domain.model.User;
 import com.pragma.powerup.domain.model.orders.OrderDishRequestModel;
 import com.pragma.powerup.domain.model.orders.OrderDishResponseModel;
 import com.pragma.powerup.domain.model.orders.OrderRequestModel;
@@ -22,9 +24,10 @@ import com.pragma.powerup.domain.model.orders.OrderResponseModel;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantEmployeePersistencePort;
-import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.bearertoken.IToken;
 import com.pragma.powerup.common.exception.OwnerNotAuthenticatedException;
+import com.pragma.powerup.domain.spi.feignclients.ITwilioFeignClientPort;
+import com.pragma.powerup.domain.spi.feignclients.IUserFeignClientPort;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -36,18 +39,21 @@ public class OrderUseCase implements IOrderServicePort {
 
     private final IToken token;
 
-    private final IRestaurantPersistencePort restaurantPersistencePort;
-
     private final IDishPersistencePort dishPersistencePort;
 
     private final IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort;
 
-    public OrderUseCase(IOrderPersistencePort orderPersistencePort, IToken token, IRestaurantPersistencePort restaurantPersistencePort, IDishPersistencePort dishPersistencePort, IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort) {
+    private final IUserFeignClientPort userFeignClientPort;
+
+    private final ITwilioFeignClientPort twilioFeignClientPort;
+
+    public OrderUseCase(IOrderPersistencePort orderPersistencePort, IToken token, IDishPersistencePort dishPersistencePort, IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort, IUserFeignClientPort userFeignClientPort, ITwilioFeignClientPort twilioFeignClientPort) {
         this.orderPersistencePort = orderPersistencePort;
         this.token = token;
-        this.restaurantPersistencePort = restaurantPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
         this.restaurantEmployeePersistencePort = restaurantEmployeePersistencePort;
+        this.userFeignClientPort = userFeignClientPort;
+        this.twilioFeignClientPort = twilioFeignClientPort;
     }
 
     @Override
@@ -86,6 +92,36 @@ public class OrderUseCase implements IOrderServicePort {
         orderPersistencePort.saveOrder(order);
     }
 
+    @Override
+    public void updateAndNotifyOrderReady(Long orderId) {
+        Long ownerAuthId = getOwnerAuth();
+        validateIfExistByOrderIdAndStatus(orderId, EOrderStatuses.IN_PREPARATION.getName());
+        RestaurantEmployee restaurantEmployee = getRestaurantEmployeeById(ownerAuthId);
+        Order order = getOrderById(orderId);
+        validateOrderRestaurantAndRestaurantEmployee(order.getRestaurantId(), restaurantEmployee.getRestaurantId());
+
+        order.setStatus(EOrderStatuses.READY.getName());
+        orderPersistencePort.saveOrder(order);
+
+        User user = userFeignClientPort.getUserById(order.getCustomerId());
+        String pin = validatePin(user);
+        String message = "Good day, mr(s) " + user.getName().toUpperCase() + ", your order is now ready to pick up.\nRemember to show the next pin " + pin + " to be able to deliver your order.";
+        sendMessage(message);
+    }
+
+    private void sendMessage(String message) {
+        String phoneNumber = "+573175324391";
+        SmsMessageModel smsMessageModel = new SmsMessageModel(phoneNumber, message);
+        twilioFeignClientPort.sendSmsMessage(smsMessageModel);
+    }
+
+    public String validatePin(User user) {
+        String documentPin = user.getDocumentNumber();
+        String namePin = user.getName();
+        String lastNamePin = user.getLastName();
+        return namePin.substring(namePin.length() - 2) + documentPin.substring(documentPin.length() - 4) + lastNamePin.substring(lastNamePin.length() - 2);
+    }
+
     private void validateOrderRestaurantAndRestaurantEmployee(Long restaurantOrderId, Long restaurantEmployeeId) {
         if (restaurantOrderId == null || restaurantEmployeeId == null || restaurantOrderId.longValue() != restaurantEmployeeId.longValue())
             throw new RestaurantOrderMustBeEqualsRestaurantEmployeeException();
@@ -105,7 +141,11 @@ public class OrderUseCase implements IOrderServicePort {
 
     private void validationsToUpdate(Long orderId, String status) {
         if (!status.equals(EOrderStatuses.IN_PREPARATION.getName())) throw new NoDataFoundException();
-        if (Boolean.FALSE.equals(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.PENDING.getName())))
+        validateIfExistByOrderIdAndStatus(orderId, EOrderStatuses.PENDING.getName());
+    }
+
+    private void validateIfExistByOrderIdAndStatus(Long orderId, String orderStatus) {
+        if (Boolean.FALSE.equals(orderPersistencePort.existsByIdAndStatus(orderId, orderStatus)))
             throw new NoDataFoundException();
     }
 

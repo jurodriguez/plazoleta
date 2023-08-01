@@ -6,6 +6,7 @@ import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderDish;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.model.RestaurantEmployee;
+import com.pragma.powerup.domain.model.SmsMessageModel;
 import com.pragma.powerup.domain.model.orders.OrderDishRequestModel;
 import com.pragma.powerup.domain.model.orders.OrderDishResponseModel;
 import com.pragma.powerup.domain.model.orders.OrderRequestModel;
@@ -15,6 +16,8 @@ import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantEmployeePersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.bearertoken.IToken;
+import com.pragma.powerup.domain.spi.feignclients.ITwilioFeignClientPort;
+import com.pragma.powerup.domain.spi.feignclients.IUserFeignClientPort;
 import com.pragma.powerup.factory.FactoryDishesDataTest;
 import com.pragma.powerup.factory.FactoryOrdersDataTest;
 import com.pragma.powerup.factory.FactoryRestaurantsDataTest;
@@ -50,6 +53,12 @@ class OrderUseCaseTest {
 
     @Mock
     IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort;
+
+    @Mock
+    IUserFeignClientPort userFeignClientPort;
+
+    @Mock
+    ITwilioFeignClientPort twilioFeignClientPort;
 
     @Test
     void mustSaveOrder() {
@@ -144,6 +153,31 @@ class OrderUseCaseTest {
         Mockito.verify(orderPersistencePort, Mockito.times(1)).existsByIdAndStatus(orderId, EOrderStatuses.PENDING.getName());
         Mockito.verify(orderPersistencePort, Mockito.times(1)).getOrderById(orderId);
         Mockito.verify(orderPersistencePort, Mockito.times(1)).saveOrder(order);
+    }
+
+    @Test
+    void updateAndNotifyOrderReady() {
+        Long orderId = 1L;
+
+        // Mocking the dependencies of the method
+        validateToken();
+        Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.IN_PREPARATION.getName())).thenReturn(Boolean.TRUE);
+        Mockito.when(restaurantEmployeePersistencePort.findByEmployeeId(1L)).thenReturn(FactoryRestaurantsDataTest.getRestaurantEmployee());
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(FactoryOrdersDataTest.getOrderWithStatus());
+        Mockito.when(userFeignClientPort.getUserById(1L)).thenReturn(FactoryRestaurantsDataTest.getUser());
+
+        // Calling the method under test
+        orderUseCase.updateAndNotifyOrderReady(orderId);
+
+        // Verifying that the method called the dependencies with the expected parameters
+        Mockito.verify(orderPersistencePort).existsByIdAndStatus(orderId, EOrderStatuses.IN_PREPARATION.getName());
+        Mockito.verify(token).getBearerToken();
+        Mockito.verify(token).getUserAuthenticatedId("bearer token");
+        Mockito.verify(restaurantEmployeePersistencePort).findByEmployeeId(1L);
+        Mockito.verify(orderPersistencePort).getOrderById(orderId);
+        Mockito.verify(orderPersistencePort).saveOrder(Mockito.any(Order.class));
+        Mockito.verify(userFeignClientPort).getUserById(1L);
+        Mockito.verify(twilioFeignClientPort).sendSmsMessage(Mockito.any(SmsMessageModel.class));
     }
 
     private void validateToken() {
