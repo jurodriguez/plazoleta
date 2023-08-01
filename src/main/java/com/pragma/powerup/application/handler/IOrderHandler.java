@@ -11,4 +11,6 @@ public interface IOrderHandler {
     List<OrderResponseDto> getAllOrdersWithPagination(Integer page, Integer size, String status);
 
     void takeOrderAndUpdateStatus(Long orderId, String status);
+
+    void updateAndNotifyOrderReady(Long orderId);
 }

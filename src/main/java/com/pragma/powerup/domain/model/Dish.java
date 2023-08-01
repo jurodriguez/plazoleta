@@ -13,8 +13,7 @@ public class Dish {
     public Dish() {
     }
 
-    public Dish(Long id, String name, Long categoryId, String description, Integer price, Long restaurantId, String imageUrl, boolean active) {
-        this.id = id;
+    public Dish(String name, Long categoryId, String description, Integer price, Long restaurantId, String imageUrl, boolean active) {
         this.name = name;
         this.categoryId = categoryId;
         this.description = description;
