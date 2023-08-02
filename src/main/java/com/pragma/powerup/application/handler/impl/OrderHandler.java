@@ -44,4 +44,14 @@ public class OrderHandler implements IOrderHandler {
     public void updateAndNotifyOrderReady(Long orderId) {
         orderServicePort.updateAndNotifyOrderReady(orderId);
     }
+
+    @Override
+    public void deliverOrder(Long orderId, String pin) {
+        orderServicePort.deliverOrder(orderId, pin);
+    }
+
+    @Override
+    public void cancelOrder(Long orderId) {
+        orderServicePort.cancelOrder(orderId);
+    }
 }

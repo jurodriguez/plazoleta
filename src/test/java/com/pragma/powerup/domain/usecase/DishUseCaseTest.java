@@ -1,5 +1,6 @@
 package com.pragma.powerup.domain.usecase;
 
+import com.pragma.powerup.common.exception.OwnerInvalidException;
 import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
@@ -46,6 +47,22 @@ class DishUseCaseTest {
         validateToken();
 
         dishUseCase.saveDish(dish);
+
+        //Then
+        Mockito.verify(restaurantPersistencePort).getRestaurantById(Mockito.anyLong());
+        Mockito.verify(dishPersistencePort).saveDish(Mockito.any(Dish.class));
+    }
+
+    @Test
+    void mustSaveDishWithOwnerInvalidException() {
+        Dish dish = FactoryDishesDataTest.getDish();
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
+
+        Mockito.when(restaurantPersistencePort.getRestaurantById(Mockito.anyLong())).thenReturn(restaurant);
+        Mockito.when(restaurantPersistencePort.getRestaurantById(dish.getRestaurantId())).thenReturn(restaurant);
+        validateToken();
+
+        assertThrows(OwnerInvalidException.class, () -> dishUseCase.saveDish(dish));
 
         //Then
         Mockito.verify(restaurantPersistencePort).getRestaurantById(Mockito.anyLong());

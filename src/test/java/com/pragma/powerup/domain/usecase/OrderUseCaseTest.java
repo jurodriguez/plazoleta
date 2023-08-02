@@ -1,5 +1,6 @@
 package com.pragma.powerup.domain.usecase;
 
+import com.pragma.powerup.common.exception.OrdersInPreparationOrReadyCannotBeCanceledException;
 import com.pragma.powerup.domain.enums.EOrderStatuses;
 import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.model.Order;
@@ -7,6 +8,7 @@ import com.pragma.powerup.domain.model.OrderDish;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.model.RestaurantEmployee;
 import com.pragma.powerup.domain.model.SmsMessageModel;
+import com.pragma.powerup.domain.model.User;
 import com.pragma.powerup.domain.model.orders.OrderDishRequestModel;
 import com.pragma.powerup.domain.model.orders.OrderDishResponseModel;
 import com.pragma.powerup.domain.model.orders.OrderRequestModel;
@@ -178,6 +180,76 @@ class OrderUseCaseTest {
         Mockito.verify(orderPersistencePort).saveOrder(Mockito.any(Order.class));
         Mockito.verify(userFeignClientPort).getUserById(1L);
         Mockito.verify(twilioFeignClientPort).sendSmsMessage(Mockito.any(SmsMessageModel.class));
+    }
+
+    @Test
+    void deliverOrder() {
+        Long orderId = 1L;
+        String pin = "id7478os";
+
+        Order order = FactoryOrdersDataTest.getOrder();
+        order.setStatus(EOrderStatuses.READY.getName());
+        User user = FactoryRestaurantsDataTest.getUser();
+
+        validateToken();
+        Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.READY.getName())).thenReturn(true);
+        Mockito.when(restaurantEmployeePersistencePort.findByEmployeeId(1L)).thenReturn(FactoryRestaurantsDataTest.getRestaurantEmployee());
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+        Mockito.when(userFeignClientPort.getUserById(order.getCustomerId())).thenReturn(user);
+        OrderUseCase orderUseCaseMock = Mockito.mock(OrderUseCase.class);
+        Mockito.when(orderUseCaseMock.validatePin(user)).thenReturn("id7478os");
+
+        // Execution
+        orderUseCase.deliverOrder(orderId, pin);
+
+        // Verification
+        assertEquals(20L, order.getRestaurantId());
+        Mockito.verify(orderPersistencePort).existsByIdAndStatus(orderId, EOrderStatuses.READY.getName());
+        Mockito.verify(token).getBearerToken();
+        Mockito.verify(token).getUserAuthenticatedId("bearer token");
+        Mockito.verify(restaurantEmployeePersistencePort).findByEmployeeId(1L);
+        Mockito.verify(orderPersistencePort).getOrderById(orderId);
+        Mockito.verify(userFeignClientPort).getUserById(order.getCustomerId());
+        Mockito.verify(orderPersistencePort).saveOrder(order);
+    }
+
+    @Test
+    void cancelOrder() {
+        Long orderId = 1L;
+
+        validateToken();
+
+        Order order = FactoryOrdersDataTest.getOrder();
+        order.setStatus(EOrderStatuses.PENDING.getName());
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+        Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.PENDING.getName())).thenReturn(true);
+
+        // Calling Method
+        orderUseCase.cancelOrder(orderId);
+
+        // Verifying Method Calls
+        Mockito.verify(orderPersistencePort, Mockito.times(1)).saveOrder(order);
+    }
+
+    @Test
+    void cancelOrderExceptionStatusPreparationOrReady() {
+        Long orderId = 1L;
+
+        // Mocking Token
+        validateToken();
+
+        // Mocking Order
+        Order order = FactoryOrdersDataTest.getOrder();
+        order.setStatus(EOrderStatuses.IN_PREPARATION.getName());
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+        Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.IN_PREPARATION.getName())).thenReturn(true);
+
+        // Calling Method and Expecting Exception
+        assertThrows(OrdersInPreparationOrReadyCannotBeCanceledException.class, () -> orderUseCase.cancelOrder(orderId));
+
+        // Verifying Method Calls
+        Mockito.verify(orderPersistencePort, Mockito.never()).saveOrder(order);
+        Mockito.verify(twilioFeignClientPort, Mockito.times(1)).sendSmsMessage(Mockito.any(SmsMessageModel.class));
     }
 
     private void validateToken() {

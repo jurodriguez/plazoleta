@@ -16,7 +16,12 @@ public enum ExceptionResponse {
     NUMBER_DISH_REQUIRED("The number of dish is required"),
     RESTAURANT_EMPLOYEE_NOT_EXIST("The Restaurant employee does not exist"),
     ORDER_NOT_EXIST("The order does not exist"),
-    RESTAURANT_ORDER_MUST_BE_EQUALS_RESTAURANT_EMPLOYEE("The restaurant of the order must be the same as the restaurant of the employee");
+    RESTAURANT_ORDER_MUST_BE_EQUALS_RESTAURANT_EMPLOYEE("The restaurant of the order must be the same as the restaurant of the employee"),
+    PIN_NOT_EQUALS("The PIN code is invalid"),
+    CUSTOMER_AUTH_MUST_BE_EQUALS("The authenticated client has to be the same client of the order"),
+    ONLY_CANCELED_PENDING_ORDERS("Only pending orders can be canceled"),
+    ORDERS_IN_PREPARATION_OR_READY_CANNOT_BE_CANCELED("Orders in preparation or ready cannot be canceled"),
+    CANCELED_ORDERS_CANNOT_BE_CANCELED("Canceled orders cannot be canceled");
 
     private final String message;
 

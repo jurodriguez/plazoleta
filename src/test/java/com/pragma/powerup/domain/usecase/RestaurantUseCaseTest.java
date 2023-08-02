@@ -1,5 +1,10 @@
 package com.pragma.powerup.domain.usecase;
 
+import com.pragma.powerup.common.exception.NitException;
+import com.pragma.powerup.common.exception.OwnerInvalidException;
+import com.pragma.powerup.common.exception.PhoneNumberException;
+import com.pragma.powerup.common.exception.RestaurantNameException;
+import com.pragma.powerup.domain.enums.ERoles;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.model.User;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
@@ -42,6 +47,54 @@ class RestaurantUseCaseTest {
         //Then
         Mockito.verify(userFeignClientPort).getUserById(Mockito.anyLong());
         Mockito.verify(restaurantPersistencePort).saveRestaurant(Mockito.any(Restaurant.class));
+    }
+
+    @Test
+    void mustSaveRestaurantWithPhoneNumberException() {
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
+        User user = FactoryRestaurantsDataTest.getUser();
+        restaurant.setPhone("a3214587987");
+
+        assertThrows(PhoneNumberException.class, () -> restaurantUseCase.saveRestaurant(restaurant));
+
+        //Then
+        Mockito.verify(restaurantPersistencePort, Mockito.never()).saveRestaurant(Mockito.any(Restaurant.class));
+    }
+
+    @Test
+    void mustSaveRestaurantWithNitException() {
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
+        User user = FactoryRestaurantsDataTest.getUser();
+        restaurant.setNit("a3214587987");
+
+        assertThrows(NitException.class, () -> restaurantUseCase.saveRestaurant(restaurant));
+
+        //Then
+        Mockito.verify(restaurantPersistencePort, Mockito.never()).saveRestaurant(Mockito.any(Restaurant.class));
+    }
+
+    @Test
+    void mustSaveRestaurantWithRestaurantNameException() {
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
+        User user = FactoryRestaurantsDataTest.getUser();
+        restaurant.setName("654897");
+
+        assertThrows(RestaurantNameException.class, () -> restaurantUseCase.saveRestaurant(restaurant));
+
+        //Then
+        Mockito.verify(restaurantPersistencePort, Mockito.never()).saveRestaurant(Mockito.any(Restaurant.class));
+    }
+
+    @Test
+    void mustSaveRestaurantWithOwnerInvalidException() {
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
+        User user = FactoryRestaurantsDataTest.getUser();
+        user.setRoleId(ERoles.EMPLOYEE.getId());
+
+        assertThrows(OwnerInvalidException.class, () -> restaurantUseCase.saveRestaurant(restaurant));
+
+        //Then
+        Mockito.verify(restaurantPersistencePort, Mockito.never()).saveRestaurant(Mockito.any(Restaurant.class));
     }
 
     @Test
