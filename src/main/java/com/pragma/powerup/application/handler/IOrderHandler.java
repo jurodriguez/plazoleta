@@ -13,4 +13,8 @@ public interface IOrderHandler {
     void takeOrderAndUpdateStatus(Long orderId, String status);
 
     void updateAndNotifyOrderReady(Long orderId);
+
+    void deliverOrder(Long orderId, String pin);
+
+    void cancelOrder(Long orderId);
 }

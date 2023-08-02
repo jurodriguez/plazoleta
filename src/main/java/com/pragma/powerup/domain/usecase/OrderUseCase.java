@@ -1,12 +1,17 @@
 package com.pragma.powerup.domain.usecase;
 
+import com.pragma.powerup.common.exception.CanceledOrdersCannotBeCanceledException;
+import com.pragma.powerup.common.exception.ClientAuthMustBeEqualsClientOrderException;
 import com.pragma.powerup.common.exception.ClientHasAnOrderException;
 import com.pragma.powerup.common.exception.DishIsInactiveException;
 import com.pragma.powerup.common.exception.DishNotExistException;
 import com.pragma.powerup.common.exception.DishRestaurantIdNotIsEqualsOrderException;
 import com.pragma.powerup.common.exception.NoDataFoundException;
 import com.pragma.powerup.common.exception.NumberDishRequiredException;
+import com.pragma.powerup.common.exception.OnlyCanceledPendingOrdersException;
 import com.pragma.powerup.common.exception.OrderNotExistException;
+import com.pragma.powerup.common.exception.OrdersInPreparationOrReadyCannotBeCanceledException;
+import com.pragma.powerup.common.exception.PinNotIsEqualsException;
 import com.pragma.powerup.common.exception.RestaurantOrderMustBeEqualsRestaurantEmployeeException;
 import com.pragma.powerup.common.exception.RestaurantEmployeeNotExistException;
 import com.pragma.powerup.domain.api.IOrderServicePort;
@@ -107,6 +112,47 @@ public class OrderUseCase implements IOrderServicePort {
         String pin = validatePin(user);
         String message = "Good day, mr(s) " + user.getName().toUpperCase() + ", your order is now ready to pick up.\nRemember to show the next pin " + pin + " to be able to deliver your order.";
         sendMessage(message);
+    }
+
+    @Override
+    public void deliverOrder(Long orderId, String pin) {
+        validateIfExistByOrderIdAndStatus(orderId, EOrderStatuses.READY.getName());
+        Long ownerAuthId = getOwnerAuth();
+        RestaurantEmployee restaurantEmployee = getRestaurantEmployeeById(ownerAuthId);
+        Order order = getOrderById(orderId);
+        validateOrderRestaurantAndRestaurantEmployee(order.getRestaurantId(), restaurantEmployee.getRestaurantId());
+
+        User user = userFeignClientPort.getUserById(order.getCustomerId());
+        String oldPin = validatePin(user);
+        if (!oldPin.equals(pin)) throw new PinNotIsEqualsException();
+
+        order.setStatus(EOrderStatuses.DELIVERED.getName());
+        orderPersistencePort.saveOrder(order);
+    }
+
+    @Override
+    public void cancelOrder(Long orderId) {
+        Long ownerAuthId = getOwnerAuth();
+        Order order = getOrderById(orderId);
+
+        validationsCancel(ownerAuthId, order);
+
+        order.setStatus(EOrderStatuses.CANCELED.getName());
+        orderPersistencePort.saveOrder(order);
+    }
+
+    private void validationsCancel(Long ownerAuthId, Order order) {
+        if (ownerAuthId.longValue() != order.getCustomerId().longValue())
+            throw new ClientAuthMustBeEqualsClientOrderException();
+
+        String status = order.getStatus();
+        if (status.equals(EOrderStatuses.IN_PREPARATION.getName()) || status.equals(EOrderStatuses.READY.getName())) {
+            sendMessage("Lo sentimos, tu pedido ya está en preparación y no puede cancelarse.");
+            throw new OrdersInPreparationOrReadyCannotBeCanceledException();
+        } else if (status.equals(EOrderStatuses.CANCELED.getName()))
+            throw new CanceledOrdersCannotBeCanceledException();
+        else if (!status.equals(EOrderStatuses.PENDING.getName()))
+            throw new OnlyCanceledPendingOrdersException();
     }
 
     private void sendMessage(String message) {

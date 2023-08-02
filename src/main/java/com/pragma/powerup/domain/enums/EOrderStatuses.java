@@ -4,7 +4,9 @@ public enum EOrderStatuses {
     PENDING(1L, "PENDING"),
     IN_PREPARATION(2L, "IN_PREPARATION"),
     READY(3L, "READY"),
-    CUSTOMER(4L, "Customer");
+    DELIVERED(4L, "DELIVERED"),
+
+    CANCELED(5L, "CANCELED");
 
     private final Long id;
 

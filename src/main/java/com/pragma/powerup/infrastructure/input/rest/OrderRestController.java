@@ -83,4 +83,32 @@ public class OrderRestController {
         orderHandler.updateAndNotifyOrderReady(orderId);
         return new ResponseEntity<>(HttpStatus.OK);
     }
+
+    @Operation(summary = "Order deliver")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order deliver", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Order doesn't exists", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
+            @ApiResponse(responseCode = "403", description = "No authorized", content = @Content)
+    })
+    @PutMapping("/orderDeliver")
+    @PreAuthorize("hasAuthority('EMPLOYEE')")
+    public ResponseEntity<Void> orderDeliver(@RequestParam Long orderId, @RequestParam String pin) {
+        orderHandler.deliverOrder(orderId, pin);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @Operation(summary = "Cancel Order")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order cancel", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Order doesn't exists", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
+            @ApiResponse(responseCode = "403", description = "No authorized", content = @Content)
+    })
+    @PutMapping("/cancelOrder")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<Void> cancelOrder(@RequestParam Long orderId) {
+        orderHandler.cancelOrder(orderId);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
 }

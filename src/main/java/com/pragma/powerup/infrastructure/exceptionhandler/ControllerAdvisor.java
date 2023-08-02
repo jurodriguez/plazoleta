@@ -71,6 +71,21 @@ public class ControllerAdvisor {
             case "class com.pragma.powerup.common.exception.RestaurantOrderMustBeEqualsRestaurantEmployeeException":
                 messageException = ExceptionResponse.RESTAURANT_ORDER_MUST_BE_EQUALS_RESTAURANT_EMPLOYEE.getMessage();
                 break;
+            case "class com.pragma.powerup.common.exception.PinNotIsEqualsException":
+                messageException = ExceptionResponse.PIN_NOT_EQUALS.getMessage();
+                break;
+            case "class com.pragma.powerup.common.exception.ClientAuthMustBeEqualsClientOrderException":
+                messageException = ExceptionResponse.CUSTOMER_AUTH_MUST_BE_EQUALS.getMessage();
+                break;
+            case "class com.pragma.powerup.common.exception.OnlyCanceledPendingOrdersException":
+                messageException = ExceptionResponse.ONLY_CANCELED_PENDING_ORDERS.getMessage();
+                break;
+            case "class com.pragma.powerup.common.exception.OrdersInPreparationOrReadyCannotBeCanceledException":
+                messageException = ExceptionResponse.ORDERS_IN_PREPARATION_OR_READY_CANNOT_BE_CANCELED.getMessage();
+                break;
+            case "class com.pragma.powerup.common.exception.CanceledOrdersCannotBeCanceledException":
+                messageException = ExceptionResponse.CANCELED_ORDERS_CANNOT_BE_CANCELED.getMessage();
+                break;
             default:
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap(exception.getClass().toString(), exception.getMessage()));
         }
