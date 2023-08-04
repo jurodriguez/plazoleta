@@ -21,6 +21,7 @@ import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderDish;
 import com.pragma.powerup.domain.model.RestaurantEmployee;
 import com.pragma.powerup.domain.model.SmsMessageModel;
+import com.pragma.powerup.domain.model.Traceability;
 import com.pragma.powerup.domain.model.User;
 import com.pragma.powerup.domain.model.orders.OrderDishRequestModel;
 import com.pragma.powerup.domain.model.orders.OrderDishResponseModel;
@@ -31,6 +32,7 @@ import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantEmployeePersistencePort;
 import com.pragma.powerup.domain.spi.bearertoken.IToken;
 import com.pragma.powerup.common.exception.OwnerNotAuthenticatedException;
+import com.pragma.powerup.domain.spi.feignclients.ITraceabilityFeignClientPort;
 import com.pragma.powerup.domain.spi.feignclients.ITwilioFeignClientPort;
 import com.pragma.powerup.domain.spi.feignclients.IUserFeignClientPort;
 
@@ -52,13 +54,16 @@ public class OrderUseCase implements IOrderServicePort {
 
     private final ITwilioFeignClientPort twilioFeignClientPort;
 
-    public OrderUseCase(IOrderPersistencePort orderPersistencePort, IToken token, IDishPersistencePort dishPersistencePort, IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort, IUserFeignClientPort userFeignClientPort, ITwilioFeignClientPort twilioFeignClientPort) {
+    private final ITraceabilityFeignClientPort traceabilityFeignClientPort;
+
+    public OrderUseCase(IOrderPersistencePort orderPersistencePort, IToken token, IDishPersistencePort dishPersistencePort, IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort, IUserFeignClientPort userFeignClientPort, ITwilioFeignClientPort twilioFeignClientPort, ITraceabilityFeignClientPort traceabilityFeignClientPort) {
         this.orderPersistencePort = orderPersistencePort;
         this.token = token;
         this.dishPersistencePort = dishPersistencePort;
         this.restaurantEmployeePersistencePort = restaurantEmployeePersistencePort;
         this.userFeignClientPort = userFeignClientPort;
         this.twilioFeignClientPort = twilioFeignClientPort;
+        this.traceabilityFeignClientPort = traceabilityFeignClientPort;
     }
 
     @Override
@@ -68,11 +73,34 @@ public class OrderUseCase implements IOrderServicePort {
         Order order = createNewOrder(orderRequestModel.getRestaurantId(), ownerAuthId);
         List<OrderDishRequestModel> orderDishes = orderRequestModel.getOrderDishes();
         validateOrderDishes(orderDishes, order);
-
+        String oldStatus = "";
         order = orderPersistencePort.saveOrder(order);
+        createAndSaveTraceability(order, oldStatus);
 
         List<OrderDish> orderDishesSave = createOrderDishList(orderDishes, order);
         orderPersistencePort.saveOrderDish(orderDishesSave);
+    }
+
+    private void createAndSaveTraceability(Order order, String oldStatus) {
+        User user = order.getCustomerId() != null ? userFeignClientPort.getUserById(order.getCustomerId()) : null;
+        if (user != null) user.setId(order.getCustomerId());
+        User employee = order.getChefId() != null ? userFeignClientPort.getUserById(order.getChefId()) : null;
+        if (employee != null) employee.setId(order.getChefId());
+        Traceability traceability = createTraceability(order, user, employee, oldStatus);
+        traceabilityFeignClientPort.saveTraceability(traceability);
+    }
+
+    private Traceability createTraceability(Order order, User user, User employee, String oldStatus) {
+        Traceability traceability = new Traceability();
+        traceability.setOrderId(String.valueOf(order.getId()));
+        traceability.setCustomerId(user != null ? String.valueOf(user.getId()) : null);
+        traceability.setCustomerEmail(user != null ? user.getEmail() : null);
+        traceability.setDate(String.valueOf(LocalDate.now()));
+        traceability.setLastStatus(oldStatus);
+        traceability.setNewStatus(order.getStatus());
+        traceability.setEmployeeId(employee != null ? String.valueOf(employee.getId()) : null);
+        traceability.setEmployeeEmail(employee != null ? employee.getEmail() : null);
+        return traceability;
     }
 
     @Override
@@ -90,9 +118,11 @@ public class OrderUseCase implements IOrderServicePort {
         RestaurantEmployee restaurantEmployee = getRestaurantEmployeeById(ownerAuthId);
         Order order = getOrderById(orderId);
         validateOrderRestaurantAndRestaurantEmployee(order.getRestaurantId(), restaurantEmployee.getRestaurantId());
-
+        String oldStatus = order.getStatus();
         order.setChefId(restaurantEmployee.getEmployeeId());
         order.setStatus(status);
+
+        createAndSaveTraceability(order, oldStatus);
 
         orderPersistencePort.saveOrder(order);
     }
@@ -104,9 +134,10 @@ public class OrderUseCase implements IOrderServicePort {
         RestaurantEmployee restaurantEmployee = getRestaurantEmployeeById(ownerAuthId);
         Order order = getOrderById(orderId);
         validateOrderRestaurantAndRestaurantEmployee(order.getRestaurantId(), restaurantEmployee.getRestaurantId());
-
+        String oldStatus = order.getStatus();
         order.setStatus(EOrderStatuses.READY.getName());
         orderPersistencePort.saveOrder(order);
+        createAndSaveTraceability(order, oldStatus);
 
         User user = userFeignClientPort.getUserById(order.getCustomerId());
         String pin = validatePin(user);
@@ -125,9 +156,10 @@ public class OrderUseCase implements IOrderServicePort {
         User user = userFeignClientPort.getUserById(order.getCustomerId());
         String oldPin = validatePin(user);
         if (!oldPin.equals(pin)) throw new PinNotIsEqualsException();
-
+        String oldStatus = order.getStatus();
         order.setStatus(EOrderStatuses.DELIVERED.getName());
         orderPersistencePort.saveOrder(order);
+        createAndSaveTraceability(order, oldStatus);
     }
 
     @Override
@@ -136,9 +168,10 @@ public class OrderUseCase implements IOrderServicePort {
         Order order = getOrderById(orderId);
 
         validationsCancel(ownerAuthId, order);
-
+        String oldStatus = order.getStatus();
         order.setStatus(EOrderStatuses.CANCELED.getName());
         orderPersistencePort.saveOrder(order);
+        createAndSaveTraceability(order, oldStatus);
     }
 
     private void validationsCancel(Long ownerAuthId, Order order) {

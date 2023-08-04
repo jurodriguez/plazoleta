@@ -44,7 +44,7 @@ class DishUseCaseTest {
 
         Mockito.when(restaurantPersistencePort.getRestaurantById(Mockito.anyLong())).thenReturn(restaurant);
         Mockito.when(restaurantPersistencePort.getRestaurantById(dish.getRestaurantId())).thenReturn(restaurant);
-        validateToken();
+        validateToken(1L);
 
         dishUseCase.saveDish(dish);
 
@@ -60,13 +60,13 @@ class DishUseCaseTest {
 
         Mockito.when(restaurantPersistencePort.getRestaurantById(Mockito.anyLong())).thenReturn(restaurant);
         Mockito.when(restaurantPersistencePort.getRestaurantById(dish.getRestaurantId())).thenReturn(restaurant);
-        validateToken();
+        validateToken(2L);
 
         assertThrows(OwnerInvalidException.class, () -> dishUseCase.saveDish(dish));
 
         //Then
         Mockito.verify(restaurantPersistencePort).getRestaurantById(Mockito.anyLong());
-        Mockito.verify(dishPersistencePort).saveDish(Mockito.any(Dish.class));
+        Mockito.verify(dishPersistencePort, Mockito.never()).saveDish(Mockito.any(Dish.class));
     }
 
     @Test
@@ -81,7 +81,7 @@ class DishUseCaseTest {
         Mockito.when(dishPersistencePort.getDishById(Mockito.anyLong())).thenReturn(previusDish);
         Mockito.when(dishPersistencePort.getDishById(previusDish.getId())).thenReturn(previusDish);
 
-        validateToken();
+        validateToken(1L);
 
         Mockito.when(restaurantPersistencePort.getRestaurantById(newDish.getRestaurantId())).thenReturn(restaurant);
 
@@ -112,7 +112,7 @@ class DishUseCaseTest {
         dish.setRestaurantId(restaurant.getId());
 
         Mockito.when(dishPersistencePort.getDishById(idDish)).thenReturn(dish);
-        validateToken();
+        validateToken(1L);
         Mockito.when(restaurantPersistencePort.getRestaurantById(restaurant.getId())).thenReturn(restaurant);
 
         // Act
@@ -122,9 +122,9 @@ class DishUseCaseTest {
         Assertions.assertTrue(dish.getActive());
     }
 
-    private void validateToken() {
+    private void validateToken(Long id) {
         Mockito.when(token.getBearerToken()).thenReturn("bearer token");
-        Mockito.when(token.getUserAuthenticatedId("bearer token")).thenReturn(1L);
+        Mockito.when(token.getUserAuthenticatedId("bearer token")).thenReturn(id);
     }
 
     @Test

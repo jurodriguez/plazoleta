@@ -8,6 +8,7 @@ import com.pragma.powerup.domain.model.OrderDish;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.model.RestaurantEmployee;
 import com.pragma.powerup.domain.model.SmsMessageModel;
+import com.pragma.powerup.domain.model.Traceability;
 import com.pragma.powerup.domain.model.User;
 import com.pragma.powerup.domain.model.orders.OrderDishRequestModel;
 import com.pragma.powerup.domain.model.orders.OrderDishResponseModel;
@@ -18,6 +19,7 @@ import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantEmployeePersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.bearertoken.IToken;
+import com.pragma.powerup.domain.spi.feignclients.ITraceabilityFeignClientPort;
 import com.pragma.powerup.domain.spi.feignclients.ITwilioFeignClientPort;
 import com.pragma.powerup.domain.spi.feignclients.IUserFeignClientPort;
 import com.pragma.powerup.factory.FactoryDishesDataTest;
@@ -62,6 +64,9 @@ class OrderUseCaseTest {
     @Mock
     ITwilioFeignClientPort twilioFeignClientPort;
 
+    @Mock
+    ITraceabilityFeignClientPort traceabilityFeignClientPort;
+
     @Test
     void mustSaveOrder() {
         OrderRequestModel orderRequestModel = new OrderRequestModel();
@@ -74,6 +79,7 @@ class OrderUseCaseTest {
         orderRequestModel.setOrderDishes(orderDishes);
 
         validateToken();
+        validateTraceability();
 
         Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
         Mockito.when(restaurantPersistencePort.getRestaurantById(Mockito.anyLong())).thenReturn(restaurant);
@@ -90,9 +96,17 @@ class OrderUseCaseTest {
         Mockito.verify(orderPersistencePort, Mockito.times(1)).existsByCustomerIdAndStatus(1L, EOrderStatuses.PENDING.getName());
         Mockito.verify(orderPersistencePort, Mockito.times(1)).existsByCustomerIdAndStatus(1L, EOrderStatuses.IN_PREPARATION.getName());
         Mockito.verify(orderPersistencePort, Mockito.times(1)).existsByCustomerIdAndStatus(1L, EOrderStatuses.READY.getName());
-
         Mockito.verify(orderPersistencePort, Mockito.times(1)).saveOrder(Mockito.any(Order.class));
         Mockito.verify(orderPersistencePort, Mockito.times(1)).saveOrderDish(Mockito.anyList());
+        Mockito.verify(traceabilityFeignClientPort).saveTraceability(Mockito.any(Traceability.class));
+    }
+
+    private void validateTraceability() {
+        User user = FactoryRestaurantsDataTest.getUser();
+        User employee = FactoryRestaurantsDataTest.getUser();
+        employee.setId(2L);
+        Mockito.when(userFeignClientPort.getUserById(1L)).thenReturn(user);
+        Mockito.when(userFeignClientPort.getUserById(2L)).thenReturn(employee);
     }
 
     @Test
@@ -140,6 +154,7 @@ class OrderUseCaseTest {
         Long orderId = 1L;
 
         validateToken();
+        validateTraceability();
         Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.PENDING.getName())).thenReturn(Boolean.TRUE);
 
         Order order = FactoryOrdersDataTest.getOrder();
@@ -155,6 +170,7 @@ class OrderUseCaseTest {
         Mockito.verify(orderPersistencePort, Mockito.times(1)).existsByIdAndStatus(orderId, EOrderStatuses.PENDING.getName());
         Mockito.verify(orderPersistencePort, Mockito.times(1)).getOrderById(orderId);
         Mockito.verify(orderPersistencePort, Mockito.times(1)).saveOrder(order);
+        Mockito.verify(traceabilityFeignClientPort).saveTraceability(Mockito.any(Traceability.class));
     }
 
     @Test
@@ -163,6 +179,7 @@ class OrderUseCaseTest {
 
         // Mocking the dependencies of the method
         validateToken();
+        validateTraceability();
         Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.IN_PREPARATION.getName())).thenReturn(Boolean.TRUE);
         Mockito.when(restaurantEmployeePersistencePort.findByEmployeeId(1L)).thenReturn(FactoryRestaurantsDataTest.getRestaurantEmployee());
         Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(FactoryOrdersDataTest.getOrderWithStatus());
@@ -178,8 +195,8 @@ class OrderUseCaseTest {
         Mockito.verify(restaurantEmployeePersistencePort).findByEmployeeId(1L);
         Mockito.verify(orderPersistencePort).getOrderById(orderId);
         Mockito.verify(orderPersistencePort).saveOrder(Mockito.any(Order.class));
-        Mockito.verify(userFeignClientPort).getUserById(1L);
         Mockito.verify(twilioFeignClientPort).sendSmsMessage(Mockito.any(SmsMessageModel.class));
+        Mockito.verify(traceabilityFeignClientPort).saveTraceability(Mockito.any(Traceability.class));
     }
 
     @Test
@@ -192,6 +209,7 @@ class OrderUseCaseTest {
         User user = FactoryRestaurantsDataTest.getUser();
 
         validateToken();
+        validateTraceability();
         Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.READY.getName())).thenReturn(true);
         Mockito.when(restaurantEmployeePersistencePort.findByEmployeeId(1L)).thenReturn(FactoryRestaurantsDataTest.getRestaurantEmployee());
         Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
@@ -209,8 +227,8 @@ class OrderUseCaseTest {
         Mockito.verify(token).getUserAuthenticatedId("bearer token");
         Mockito.verify(restaurantEmployeePersistencePort).findByEmployeeId(1L);
         Mockito.verify(orderPersistencePort).getOrderById(orderId);
-        Mockito.verify(userFeignClientPort).getUserById(order.getCustomerId());
         Mockito.verify(orderPersistencePort).saveOrder(order);
+        Mockito.verify(traceabilityFeignClientPort).saveTraceability(Mockito.any(Traceability.class));
     }
 
     @Test
@@ -218,6 +236,7 @@ class OrderUseCaseTest {
         Long orderId = 1L;
 
         validateToken();
+        validateTraceability();
 
         Order order = FactoryOrdersDataTest.getOrder();
         order.setStatus(EOrderStatuses.PENDING.getName());
@@ -229,6 +248,7 @@ class OrderUseCaseTest {
 
         // Verifying Method Calls
         Mockito.verify(orderPersistencePort, Mockito.times(1)).saveOrder(order);
+        Mockito.verify(traceabilityFeignClientPort).saveTraceability(Mockito.any(Traceability.class));
     }
 
     @Test
