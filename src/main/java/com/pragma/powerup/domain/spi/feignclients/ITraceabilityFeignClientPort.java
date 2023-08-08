@@ -8,4 +8,6 @@ public interface ITraceabilityFeignClientPort {
     void saveTraceability(Traceability traceability);
 
     List<Traceability> getAllTraceability(Long orderId);
+
+    String timeDifferenceForOrders(Long orderId);
 }

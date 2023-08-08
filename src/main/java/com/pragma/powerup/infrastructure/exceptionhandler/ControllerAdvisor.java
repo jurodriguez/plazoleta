@@ -86,6 +86,9 @@ public class ControllerAdvisor {
             case "class com.pragma.powerup.common.exception.CanceledOrdersCannotBeCanceledException":
                 messageException = ExceptionResponse.CANCELED_ORDERS_CANNOT_BE_CANCELED.getMessage();
                 break;
+            case "class com.pragma.powerup.common.exception.StatusOfOrderInvalidException":
+                messageException = ExceptionResponse.STATUS_OF_THE_ORDER_INVALID.getMessage();
+                break;
             default:
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap(exception.getClass().toString(), exception.getMessage()));
         }

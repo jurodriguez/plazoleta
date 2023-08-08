@@ -1,6 +1,10 @@
 package com.pragma.powerup.domain.usecase;
 
+import com.pragma.powerup.common.exception.OrderNotExistException;
 import com.pragma.powerup.common.exception.OrdersInPreparationOrReadyCannotBeCanceledException;
+import com.pragma.powerup.common.exception.OwnerInvalidException;
+import com.pragma.powerup.common.exception.RestaurantIdInvalidException;
+import com.pragma.powerup.common.exception.StatusOfOrderInvalidException;
 import com.pragma.powerup.domain.enums.EOrderStatuses;
 import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.model.Order;
@@ -78,7 +82,7 @@ class OrderUseCaseTest {
         orderDishes.add(orderDishRequestModel);
         orderRequestModel.setOrderDishes(orderDishes);
 
-        validateToken();
+        validateToken(1L);
         validateTraceability();
 
         Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
@@ -121,7 +125,7 @@ class OrderUseCaseTest {
         orderDishes.add(orderDish);
         Dish dish = FactoryDishesDataTest.getDish();
 
-        validateToken();
+        validateToken(1L);
 
         Mockito.when(restaurantEmployeePersistencePort.findByEmployeeId(1L)).thenReturn(RestaurantEmployee);
         Mockito.when(orderPersistencePort.getAllOrdersWithPagination(1, 10, RestaurantEmployee.getRestaurantId(), EOrderStatuses.PENDING.getName())).thenReturn(orderList);
@@ -153,7 +157,7 @@ class OrderUseCaseTest {
     void takeOrderAndUpdateStatus() {
         Long orderId = 1L;
 
-        validateToken();
+        validateToken(1L);
         validateTraceability();
         Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.PENDING.getName())).thenReturn(Boolean.TRUE);
 
@@ -178,7 +182,7 @@ class OrderUseCaseTest {
         Long orderId = 1L;
 
         // Mocking the dependencies of the method
-        validateToken();
+        validateToken(1L);
         validateTraceability();
         Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.IN_PREPARATION.getName())).thenReturn(Boolean.TRUE);
         Mockito.when(restaurantEmployeePersistencePort.findByEmployeeId(1L)).thenReturn(FactoryRestaurantsDataTest.getRestaurantEmployee());
@@ -208,7 +212,7 @@ class OrderUseCaseTest {
         order.setStatus(EOrderStatuses.READY.getName());
         User user = FactoryRestaurantsDataTest.getUser();
 
-        validateToken();
+        validateToken(1L);
         validateTraceability();
         Mockito.when(orderPersistencePort.existsByIdAndStatus(orderId, EOrderStatuses.READY.getName())).thenReturn(true);
         Mockito.when(restaurantEmployeePersistencePort.findByEmployeeId(1L)).thenReturn(FactoryRestaurantsDataTest.getRestaurantEmployee());
@@ -235,7 +239,7 @@ class OrderUseCaseTest {
     void cancelOrder() {
         Long orderId = 1L;
 
-        validateToken();
+        validateToken(1L);
         validateTraceability();
 
         Order order = FactoryOrdersDataTest.getOrder();
@@ -256,7 +260,7 @@ class OrderUseCaseTest {
         Long orderId = 1L;
 
         // Mocking Token
-        validateToken();
+        validateToken(1L);
 
         // Mocking Order
         Order order = FactoryOrdersDataTest.getOrder();
@@ -272,8 +276,96 @@ class OrderUseCaseTest {
         Mockito.verify(twilioFeignClientPort, Mockito.times(1)).sendSmsMessage(Mockito.any(SmsMessageModel.class));
     }
 
-    private void validateToken() {
+    @Test
+    void timeDifferenceForOrders() {
+        Long orderId = 1L;
+        // Mocking Order
+        Order order = FactoryOrdersDataTest.getOrder();
+        order.setStatus(EOrderStatuses.READY.getName());
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
+
+        Mockito.when(restaurantPersistencePort.getRestaurantById(Mockito.anyLong())).thenReturn(restaurant);
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+        validateToken(1L);
+
+        orderUseCase.timeDifferenceForOrders(orderId);
+
+        Mockito.verify(restaurantPersistencePort).getRestaurantById(Mockito.anyLong());
+        Mockito.verify(orderPersistencePort).getOrderById(Mockito.anyLong());
+        Mockito.verify(traceabilityFeignClientPort).timeDifferenceForOrders(Mockito.anyLong());
+    }
+
+    @Test
+    void timeDifferenceForOrdersWithOrderNotExistException() {
+        Long orderId = 1L;
+
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(null);
+        validateToken(1L);
+
+        assertThrows(OrderNotExistException.class, () -> orderUseCase.timeDifferenceForOrders(orderId));
+
+        Mockito.verify(traceabilityFeignClientPort, Mockito.never()).timeDifferenceForOrders(Mockito.anyLong());
+    }
+
+    @Test
+    void timeDifferenceForOrdersWithRestaurantIdInvalidException() {
+        Long orderId = 1L;
+        // Mocking Order
+        Order order = FactoryOrdersDataTest.getOrder();
+        order.setStatus(EOrderStatuses.READY.getName());
+
+        Mockito.when(restaurantPersistencePort.getRestaurantById(Mockito.anyLong())).thenReturn(null);
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+        validateToken(1L);
+
+        assertThrows(RestaurantIdInvalidException.class, () -> orderUseCase.timeDifferenceForOrders(orderId));
+
+        Mockito.verify(restaurantPersistencePort).getRestaurantById(Mockito.anyLong());
+        Mockito.verify(orderPersistencePort).getOrderById(Mockito.anyLong());
+        Mockito.verify(traceabilityFeignClientPort, Mockito.never()).timeDifferenceForOrders(Mockito.anyLong());
+    }
+
+    @Test
+    void timeDifferenceForOrdersWithStatusOfOrderInvalidException() {
+        Long orderId = 1L;
+        // Mocking Order
+        Order order = FactoryOrdersDataTest.getOrder();
+        order.setStatus(EOrderStatuses.IN_PREPARATION.getName());
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
+
+
+        Mockito.when(restaurantPersistencePort.getRestaurantById(Mockito.anyLong())).thenReturn(restaurant);
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+        validateToken(1L);
+
+        assertThrows(StatusOfOrderInvalidException.class, () -> orderUseCase.timeDifferenceForOrders(orderId));
+
+        Mockito.verify(restaurantPersistencePort).getRestaurantById(Mockito.anyLong());
+        Mockito.verify(orderPersistencePort).getOrderById(Mockito.anyLong());
+        Mockito.verify(traceabilityFeignClientPort, Mockito.never()).timeDifferenceForOrders(Mockito.anyLong());
+    }
+
+    @Test
+    void timeDifferenceForOrdersWithOwnerInvalidException() {
+        Long orderId = 1L;
+        // Mocking Order
+        Order order = FactoryOrdersDataTest.getOrder();
+        order.setStatus(EOrderStatuses.READY.getName());
+        Restaurant restaurant = FactoryRestaurantsDataTest.getRestaurant();
+
+        Mockito.when(restaurantPersistencePort.getRestaurantById(Mockito.anyLong())).thenReturn(restaurant);
+        Mockito.when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+        validateToken(2L);
+
+        assertThrows(OwnerInvalidException.class, () -> orderUseCase.timeDifferenceForOrders(orderId));
+
+        Mockito.verify(restaurantPersistencePort).getRestaurantById(Mockito.anyLong());
+        Mockito.verify(orderPersistencePort).getOrderById(Mockito.anyLong());
+        Mockito.verify(traceabilityFeignClientPort, Mockito.never()).timeDifferenceForOrders(Mockito.anyLong());
+    }
+
+    private void validateToken(Long id) {
         Mockito.when(token.getBearerToken()).thenReturn("bearer token");
-        Mockito.when(token.getUserAuthenticatedId("bearer token")).thenReturn(1L);
+        Mockito.when(token.getUserAuthenticatedId("bearer token")).thenReturn(id);
     }
 }

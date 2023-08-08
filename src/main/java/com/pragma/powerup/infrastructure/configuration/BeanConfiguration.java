@@ -130,7 +130,8 @@ public class BeanConfiguration {
 
     @Bean
     public IOrderServicePort orderServicePort() {
-        return new OrderUseCase(orderPersistencePort(), token(), dishPersistencePort(), restaurantEmployeePersistencePort(), userFeignClientPort(), twilioFeignClientPort(), traceabilityFeignClientPort());
+        return new OrderUseCase(orderPersistencePort(), token(), dishPersistencePort(), restaurantEmployeePersistencePort(),
+                userFeignClientPort(), twilioFeignClientPort(), traceabilityFeignClientPort(), restaurantPersistencePort());
     }
 
     @Bean

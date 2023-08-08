@@ -20,4 +20,7 @@ public interface TraceabilityFeignClients {
 
     @GetMapping("/getAllTraceability")
     List<TraceabilityDto> getAllTraceability(@RequestParam Long orderId);
+
+    @GetMapping("/timeDifferenceForOrders")
+    String timeDifferenceForOrders(@RequestParam Long orderId);
 }

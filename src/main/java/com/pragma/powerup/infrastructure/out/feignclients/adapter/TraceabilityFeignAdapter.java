@@ -24,4 +24,9 @@ public class TraceabilityFeignAdapter implements ITraceabilityFeignClientPort {
     public List<Traceability> getAllTraceability(Long orderId) {
         return traceabilityDtoMapper.toTraceabilityResponseDtoList(traceabilityFeignClients.getAllTraceability(orderId));
     }
+
+    @Override
+    public String timeDifferenceForOrders(Long orderId) {
+        return traceabilityFeignClients.timeDifferenceForOrders(orderId);
+    }
 }
