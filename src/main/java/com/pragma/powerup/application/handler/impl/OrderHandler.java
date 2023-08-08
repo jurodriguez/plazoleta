@@ -54,4 +54,9 @@ public class OrderHandler implements IOrderHandler {
     public void cancelOrder(Long orderId) {
         orderServicePort.cancelOrder(orderId);
     }
+
+    @Override
+    public String timeDifferenceForOrders(Long orderId) {
+        return orderServicePort.timeDifferenceForOrders(orderId);
+    }
 }

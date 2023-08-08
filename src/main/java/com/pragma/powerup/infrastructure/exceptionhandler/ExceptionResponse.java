@@ -21,7 +21,8 @@ public enum ExceptionResponse {
     CUSTOMER_AUTH_MUST_BE_EQUALS("The authenticated client has to be the same client of the order"),
     ONLY_CANCELED_PENDING_ORDERS("Only pending orders can be canceled"),
     ORDERS_IN_PREPARATION_OR_READY_CANNOT_BE_CANCELED("Orders in preparation or ready cannot be canceled"),
-    CANCELED_ORDERS_CANNOT_BE_CANCELED("Canceled orders cannot be canceled");
+    CANCELED_ORDERS_CANNOT_BE_CANCELED("Canceled orders cannot be canceled"),
+    STATUS_OF_THE_ORDER_INVALID("The status of the order does not allow calculating the time");
 
     private final String message;
 

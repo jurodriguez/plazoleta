@@ -11,16 +11,21 @@ import com.pragma.powerup.common.exception.NumberDishRequiredException;
 import com.pragma.powerup.common.exception.OnlyCanceledPendingOrdersException;
 import com.pragma.powerup.common.exception.OrderNotExistException;
 import com.pragma.powerup.common.exception.OrdersInPreparationOrReadyCannotBeCanceledException;
+import com.pragma.powerup.common.exception.OwnerInvalidException;
 import com.pragma.powerup.common.exception.PinNotIsEqualsException;
+import com.pragma.powerup.common.exception.RestaurantIdInvalidException;
 import com.pragma.powerup.common.exception.RestaurantOrderMustBeEqualsRestaurantEmployeeException;
 import com.pragma.powerup.common.exception.RestaurantEmployeeNotExistException;
+import com.pragma.powerup.common.exception.StatusOfOrderInvalidException;
 import com.pragma.powerup.domain.api.IOrderServicePort;
 import com.pragma.powerup.domain.enums.EOrderStatuses;
 import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderDish;
+import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.model.RestaurantEmployee;
 import com.pragma.powerup.domain.model.SmsMessageModel;
+import com.pragma.powerup.domain.model.Traceability;
 import com.pragma.powerup.domain.model.User;
 import com.pragma.powerup.domain.model.orders.OrderDishRequestModel;
 import com.pragma.powerup.domain.model.orders.OrderDishResponseModel;
@@ -29,12 +34,15 @@ import com.pragma.powerup.domain.model.orders.OrderResponseModel;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantEmployeePersistencePort;
+import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.bearertoken.IToken;
 import com.pragma.powerup.common.exception.OwnerNotAuthenticatedException;
+import com.pragma.powerup.domain.spi.feignclients.ITraceabilityFeignClientPort;
 import com.pragma.powerup.domain.spi.feignclients.ITwilioFeignClientPort;
 import com.pragma.powerup.domain.spi.feignclients.IUserFeignClientPort;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,13 +60,19 @@ public class OrderUseCase implements IOrderServicePort {
 
     private final ITwilioFeignClientPort twilioFeignClientPort;
 
-    public OrderUseCase(IOrderPersistencePort orderPersistencePort, IToken token, IDishPersistencePort dishPersistencePort, IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort, IUserFeignClientPort userFeignClientPort, ITwilioFeignClientPort twilioFeignClientPort) {
+    private final ITraceabilityFeignClientPort traceabilityFeignClientPort;
+
+    private final IRestaurantPersistencePort restaurantPersistencePort;
+
+    public OrderUseCase(IOrderPersistencePort orderPersistencePort, IToken token, IDishPersistencePort dishPersistencePort, IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort, IUserFeignClientPort userFeignClientPort, ITwilioFeignClientPort twilioFeignClientPort, ITraceabilityFeignClientPort traceabilityFeignClientPort, IRestaurantPersistencePort restaurantPersistencePort) {
         this.orderPersistencePort = orderPersistencePort;
         this.token = token;
         this.dishPersistencePort = dishPersistencePort;
         this.restaurantEmployeePersistencePort = restaurantEmployeePersistencePort;
         this.userFeignClientPort = userFeignClientPort;
         this.twilioFeignClientPort = twilioFeignClientPort;
+        this.traceabilityFeignClientPort = traceabilityFeignClientPort;
+        this.restaurantPersistencePort = restaurantPersistencePort;
     }
 
     @Override
@@ -68,11 +82,34 @@ public class OrderUseCase implements IOrderServicePort {
         Order order = createNewOrder(orderRequestModel.getRestaurantId(), ownerAuthId);
         List<OrderDishRequestModel> orderDishes = orderRequestModel.getOrderDishes();
         validateOrderDishes(orderDishes, order);
-
+        String oldStatus = "";
         order = orderPersistencePort.saveOrder(order);
+        createAndSaveTraceability(order, oldStatus);
 
         List<OrderDish> orderDishesSave = createOrderDishList(orderDishes, order);
         orderPersistencePort.saveOrderDish(orderDishesSave);
+    }
+
+    private void createAndSaveTraceability(Order order, String oldStatus) {
+        User user = order.getCustomerId() != null ? userFeignClientPort.getUserById(order.getCustomerId()) : null;
+        if (user != null) user.setId(order.getCustomerId());
+        User employee = order.getChefId() != null ? userFeignClientPort.getUserById(order.getChefId()) : null;
+        if (employee != null) employee.setId(order.getChefId());
+        Traceability traceability = createTraceability(order, user, employee, oldStatus);
+        traceabilityFeignClientPort.saveTraceability(traceability);
+    }
+
+    private Traceability createTraceability(Order order, User user, User employee, String oldStatus) {
+        Traceability traceability = new Traceability();
+        traceability.setOrderId(String.valueOf(order.getId()));
+        traceability.setCustomerId(user != null ? String.valueOf(user.getId()) : null);
+        traceability.setCustomerEmail(user != null ? user.getEmail() : null);
+        traceability.setDate(String.valueOf(LocalDateTime.now()));
+        traceability.setLastStatus(oldStatus);
+        traceability.setNewStatus(order.getStatus());
+        traceability.setEmployeeId(employee != null ? String.valueOf(employee.getId()) : null);
+        traceability.setEmployeeEmail(employee != null ? employee.getEmail() : null);
+        return traceability;
     }
 
     @Override
@@ -90,9 +127,11 @@ public class OrderUseCase implements IOrderServicePort {
         RestaurantEmployee restaurantEmployee = getRestaurantEmployeeById(ownerAuthId);
         Order order = getOrderById(orderId);
         validateOrderRestaurantAndRestaurantEmployee(order.getRestaurantId(), restaurantEmployee.getRestaurantId());
-
+        String oldStatus = order.getStatus();
         order.setChefId(restaurantEmployee.getEmployeeId());
         order.setStatus(status);
+
+        createAndSaveTraceability(order, oldStatus);
 
         orderPersistencePort.saveOrder(order);
     }
@@ -104,9 +143,10 @@ public class OrderUseCase implements IOrderServicePort {
         RestaurantEmployee restaurantEmployee = getRestaurantEmployeeById(ownerAuthId);
         Order order = getOrderById(orderId);
         validateOrderRestaurantAndRestaurantEmployee(order.getRestaurantId(), restaurantEmployee.getRestaurantId());
-
+        String oldStatus = order.getStatus();
         order.setStatus(EOrderStatuses.READY.getName());
         orderPersistencePort.saveOrder(order);
+        createAndSaveTraceability(order, oldStatus);
 
         User user = userFeignClientPort.getUserById(order.getCustomerId());
         String pin = validatePin(user);
@@ -125,9 +165,10 @@ public class OrderUseCase implements IOrderServicePort {
         User user = userFeignClientPort.getUserById(order.getCustomerId());
         String oldPin = validatePin(user);
         if (!oldPin.equals(pin)) throw new PinNotIsEqualsException();
-
+        String oldStatus = order.getStatus();
         order.setStatus(EOrderStatuses.DELIVERED.getName());
         orderPersistencePort.saveOrder(order);
+        createAndSaveTraceability(order, oldStatus);
     }
 
     @Override
@@ -136,9 +177,41 @@ public class OrderUseCase implements IOrderServicePort {
         Order order = getOrderById(orderId);
 
         validationsCancel(ownerAuthId, order);
-
+        String oldStatus = order.getStatus();
         order.setStatus(EOrderStatuses.CANCELED.getName());
         orderPersistencePort.saveOrder(order);
+        createAndSaveTraceability(order, oldStatus);
+    }
+
+    @Override
+    public String timeDifferenceForOrders(Long orderId) {
+        Order order = getOrderById(orderId);
+        ownerValidation(order.getRestaurantId());
+        validateStatus(order);
+        String time = traceabilityFeignClientPort.timeDifferenceForOrders(orderId);
+        return "The time from when it starts to when it is ready is " + time;
+    }
+
+    private void ownerValidation(Long restaurantId) {
+        Long idOwnerRestaurant = getOwnerRestaurant(restaurantId);
+        Long idOwnerAuth = getOwnerAuth();
+
+        if (idOwnerRestaurant.longValue() != idOwnerAuth.longValue()) throw new OwnerInvalidException();
+    }
+
+    private Long getOwnerRestaurant(Long restaurantId) {
+        Restaurant restaurant = restaurantPersistencePort.getRestaurantById(restaurantId);
+        if (restaurant == null) throw new RestaurantIdInvalidException();
+        return restaurant.getOwnerId();
+    }
+
+    private static void validateStatus(Order order) {
+        if (order.getStatus() == null || order.getStatus().equals(EOrderStatuses.PENDING.getName()))
+            throw new StatusOfOrderInvalidException();
+        if (order.getStatus() == null || order.getStatus().equals(EOrderStatuses.IN_PREPARATION.getName()))
+            throw new StatusOfOrderInvalidException();
+        if (order.getStatus() == null || order.getStatus().equals(EOrderStatuses.CANCELED.getName()))
+            throw new StatusOfOrderInvalidException();
     }
 
     private void validationsCancel(Long ownerAuthId, Order order) {

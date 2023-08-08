@@ -111,4 +111,16 @@ public class OrderRestController {
         orderHandler.cancelOrder(orderId);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
+
+    @Operation(summary = "time difference for orders")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "302", description = "time difference", content = @Content),
+            @ApiResponse(responseCode = "409", description = "The order has not finished", content = @Content),
+            @ApiResponse(responseCode = "403", description = "No authorized", content = @Content)
+    })
+    @GetMapping("/timeDifferenceForOrders")
+    @PreAuthorize("hasAuthority('OWNER')")
+    public ResponseEntity<String> timeDifferenceForOrders(@RequestParam() Long orderId) {
+        return ResponseEntity.ok(orderHandler.timeDifferenceForOrders(orderId));
+    }
 }

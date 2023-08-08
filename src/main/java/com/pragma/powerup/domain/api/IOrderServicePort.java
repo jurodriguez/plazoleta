@@ -17,4 +17,6 @@ public interface IOrderServicePort {
     void deliverOrder(Long orderId, String pin);
 
     void cancelOrder(Long orderId);
+
+    String timeDifferenceForOrders(Long orderId);
 }
